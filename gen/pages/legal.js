@@ -3,7 +3,7 @@
 const C = require('../components');
 
 function legalHero(title, lead, breadcrumbs) {
-  return C.renderHeroPage({ eyebrow: 'Legal', title, lead, breadcrumbs });
+  return C.renderHeroPage({ eyebrow: 'Legal', title, lead, breadcrumbs, callbackHref: '/contact#callback' });
 }
 
 function privacy() {

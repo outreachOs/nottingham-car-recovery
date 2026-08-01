@@ -19,6 +19,9 @@ function buildServicePage(opts) {
 
   const faq = C.renderFaqSection(opts.faqs, {});
 
+  const needRecoveryBand = C.renderNeedRecoveryBand({});
+  const callbackForm = C.renderCallbackForm({ showPanel: false });
+
   const coverageSection = `<section class="section">
   <div class="container">
     <div class="two-col layout-main-aside">
@@ -39,9 +42,14 @@ function buildServicePage(opts) {
 </section>`;
 
   const content = `${hero}
+${needRecoveryBand}
+${callbackForm}
 ${coverageSection}
 ${faq.html}
-${C.renderFinalCta({ heading: opts.ctaHeading || 'Ready to Request Recovery?' })}`;
+${C.renderFinalCta({
+    heading: 'Need to arrange recovery?',
+    lead: `Call ${C.SITE_CONFIG.phoneDisplay} or request a callback.`
+  })}`;
 
   return {
     path: opts.path,

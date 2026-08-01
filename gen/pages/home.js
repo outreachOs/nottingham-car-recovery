@@ -10,7 +10,7 @@ function build() {
   const content = `${C.renderHeroHome()}
 ${C.renderTrustStrip()}
 ${C.renderServicesGrid()}
-${C.renderCallbackForm({ formId: 'callback-form', formName: 'callback' })}
+${C.renderCallbackForm({ showPanel: true })}
 ${C.renderRoadCoverage()}
 ${C.renderWhyChoose()}
 ${C.renderHowItWorks()}

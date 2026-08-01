@@ -82,8 +82,7 @@
       var formName = (event.detail && event.detail.form) || 'enquiry';
       var eventMap = {
         callback: 'callback_submit',
-        booking: 'booking_submit',
-        contact: 'contact_submit'
+        planned_transport: 'planned_transport_submit'
       };
       trackEvent(eventMap[formName] || 'form_submit', {
         form_name: formName

@@ -141,7 +141,7 @@ function renderHeader() {
     </nav>
     <div class="header-call">
       <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary" style="padding:0.625rem 1rem;font-size:0.875rem;">
-        ${icon('phone')} Call for Recovery
+        ${icon('phone')} Call ${escapeHtml(SITE_CONFIG.phoneDisplay)}
       </a>
     </div>
     <button type="button" class="menu-toggle" aria-haspopup="dialog" aria-controls="mobile-menu" aria-expanded="false" aria-label="Open menu">
@@ -175,8 +175,8 @@ function renderHeader() {
       </details>
     </nav>
     <div class="mobile-menu__actions">
-      <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary btn-block">${icon('phone')} Call for Recovery</a>
-      <a href="/booking" class="btn btn-outline btn-block">${icon('calendarClock')} Request a Callback</a>
+      <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary btn-block">${icon('phone')} Call ${escapeHtml(SITE_CONFIG.phoneDisplay)}</a>
+      <a href="/contact#callback" class="btn btn-outline btn-block">${icon('calendarClock')} Request a Callback</a>
     </div>
   </div>
 </div>`;
@@ -243,24 +243,37 @@ function renderHeroHome() {
       <div class="btn-row">
         ${ctaButtons()}
       </div>
+      ${
+        SITE_CONFIG.isTwentyFourSeven
+          ? `<p style="margin-top:1rem;font-weight:600;color:var(--primary);">Available ${escapeHtml(SITE_CONFIG.serviceHours)}.</p>`
+          : ''
+      }
+      <p style="margin-top:0.5rem;color:var(--muted-foreground);font-size:0.875rem;max-width:34rem;">Call now and tell us where you are, what vehicle you have and where it needs to go. This information is gathered by phone, not through the callback form.</p>
     </div>
   </div>
 </section>`;
 }
 
+// Conversion hierarchy is fixed sitewide: call is always primary,
+// WhatsApp secondary, callback third. The call button always shows the
+// real number rather than generic text ("Call for Recovery" etc.).
 function ctaButtons(opts) {
   opts = opts || {};
-  const callLabel = opts.callLabel || 'Call for Vehicle Recovery';
+  const callLabel = opts.callLabel || `Call ${SITE_CONFIG.phoneDisplay}`;
   const whatsappLabel = opts.whatsappLabel || 'WhatsApp Us';
   const callbackLabel = opts.callbackLabel || 'Request a Callback';
-  const callbackHref = opts.callbackHref || '/booking';
+  const callbackHref = opts.callbackHref || '#callback';
+  const showCallback = opts.showCallback !== false;
   return `<a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary">${icon('phone')} ${escapeHtml(callLabel)}</a>
-<a href="${SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline">${icon('messageCircle')} ${escapeHtml(whatsappLabel)}</a>
-<a href="${callbackHref}" class="btn btn-outline">${icon('calendarClock')} ${escapeHtml(callbackLabel)}</a>`;
+<a href="${SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline">${icon('messageCircle')} ${escapeHtml(whatsappLabel)}</a>${
+    showCallback
+      ? `\n<a href="${callbackHref}" class="btn btn-outline">${icon('calendarClock')} ${escapeHtml(callbackLabel)}</a>`
+      : ''
+  }`;
 }
 
 function renderHeroPage(opts) {
-  const { eyebrow, title, titleAccent, lead, breadcrumbs = [] } = opts;
+  const { eyebrow, title, titleAccent, lead, breadcrumbs = [], callbackHref } = opts;
   return `${renderBreadcrumbs(breadcrumbs)}
 <section class="hero hero--page hero--plain">
   <div class="container">
@@ -269,7 +282,7 @@ function renderHeroPage(opts) {
       <h1>${escapeHtml(title)}${titleAccent ? `<span class="accent">${escapeHtml(titleAccent)}</span>` : ''}</h1>
       ${lead ? `<p class="lead">${lead}</p>` : ''}
       <div class="btn-row">
-        ${ctaButtons()}
+        ${ctaButtons(callbackHref ? { callbackHref } : {})}
       </div>
     </div>
   </div>
@@ -346,9 +359,9 @@ function renderServicesGrid(opts) {
 --------------------------------------------------------------- */
 function hiddenTrackingFields() {
   const names = [
-    'source_page',
-    'page_title',
-    'page_url',
+    'sourcePage',
+    'pageTitle',
+    'currentUrl',
     'referrer',
     'timestamp',
     'utm_source',
@@ -364,29 +377,25 @@ function hiddenTrackingFields() {
 
 function honeypotField() {
   return `<div class="honeypot-field" aria-hidden="true">
-  <label for="website">Leave this field blank</label>
-  <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+  <label for="honeypot">Leave this field blank</label>
+  <input type="text" id="honeypot" name="honeypot" tabindex="-1" autocomplete="off">
 </div>`;
 }
 
+// The callback form is deliberately minimal: name and phone number only.
+// Urgent recovery customers must never be presented with a long form as
+// the primary conversion route — vehicle/location/service detail is
+// gathered by phone once we call back, not collected here.
 function renderCallbackForm(opts) {
   opts = opts || {};
   const formId = opts.formId || 'callback-form';
-  const formName = opts.formName || 'callback';
-  const showPanel = opts.showPanel !== false;
-  const heading = opts.heading || 'Quick Callback Request';
-  const lead = opts.lead || "Leave your details and we'll contact you about your recovery request.";
+  const formName = 'callback';
+  const showPanel = opts.showPanel === true;
+  const sectionId = opts.sectionId || 'callback';
 
-  const checklist = [
-    'Share your location',
-    'Tell us about the vehicle',
-    'Confirm the intended destination',
-    'We will assess whether the job is suitable'
-  ];
-
-  const formHtml = `<div>
-      <h2>${escapeHtml(heading)}</h2>
-      <p style="margin-top:0.75rem;color:var(--muted-foreground);max-width:32rem;">${escapeHtml(lead)}</p>
+  const formHtml = `<div class="callback-card">
+      <h2>Need Us to Call You?</h2>
+      <p style="margin-top:0.75rem;color:var(--muted-foreground);max-width:32rem;">Enter your name and phone number and we'll call you about your recovery request.</p>
       <form id="${formId}" data-notify-form data-form-name="${formName}" action="/notify" method="post" novalidate>
         <input type="hidden" name="form_name" value="${formName}">
         ${hiddenTrackingFields()}
@@ -394,55 +403,59 @@ function renderCallbackForm(opts) {
         <div class="form-grid cols-2">
           <div class="field">
             <label for="${formId}-name">Name</label>
-            <input id="${formId}-name" name="name" type="text" placeholder="Your name" required>
+            <input id="${formId}-name" name="name" type="text" autocomplete="name" required>
             <span class="field__error" role="alert"></span>
           </div>
           <div class="field">
             <label for="${formId}-phone">Phone number</label>
-            <input id="${formId}-phone" name="phone" type="tel" placeholder="Best contact number" required>
+            <input id="${formId}-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required>
             <span class="field__error" role="alert"></span>
           </div>
         </div>
-        <div class="form-grid cols-2">
-          <div class="field">
-            <label for="${formId}-help">What do you need help with?</label>
-            <select id="${formId}-help" name="help">
-              <option value="" selected>Select a service</option>
-              ${SERVICES.map((s) => `<option>${escapeHtml(s.title)}</option>`).join('\n')}
-            </select>
-          </div>
-          <div class="field">
-            <label for="${formId}-area">Collection area</label>
-            <input id="${formId}-area" name="area" type="text" placeholder="e.g. West Bridgford">
-          </div>
-        </div>
-        <div class="field" style="margin-top:1rem;">
-          <label for="${formId}-message">Short message</label>
-          <textarea id="${formId}-message" name="message" rows="4" placeholder="Tell us about the vehicle and your situation"></textarea>
-        </div>
         <div style="margin-top:1.5rem;">
-          <button type="submit" class="btn btn-primary btn-block btn-block-sm-auto">Request Callback</button>
+          <button type="submit" class="btn btn-primary btn-block btn-block-sm-auto">Request My Callback</button>
         </div>
         <div class="form-banner" role="status"></div>
-        <p class="form-note">${icon('shieldCheck')} Your details are only used to respond to your recovery request. See our <a href="/privacy">Privacy Policy</a>.</p>
+        <p class="form-note">Prefer to speak now? Call <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click">${escapeHtml(SITE_CONFIG.phoneDisplay)}</a>.</p>
+        <p class="form-note">Your details will only be used to respond to this enquiry.</p>
       </form>
     </div>`;
 
   const panelHtml = `<div class="safe-panel">
-      <h3>In a Safe Place? Now You Can Call Us.</h3>
-      <ul>
-        ${checklist.map((c) => `<li>${icon('circleCheck')}<span>${escapeHtml(c)}</span></li>`).join('\n')}
-      </ul>
-      <div class="safe-panel__notice">
-        <p>Only make contact once you are safely positioned away from moving traffic. If you are in immediate danger, call <strong>999</strong> first.</p>
-      </div>
+      <h3>Need Recovery Now?</h3>
+      <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary btn-block">${icon('phone')} Call ${escapeHtml(SITE_CONFIG.phoneDisplay)}</a>
+      <p style="margin-top:1rem;color:var(--muted-foreground);font-size:0.9375rem;">Available 24/7 across Nottingham and surrounding areas.</p>
+      <a href="${SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline btn-block" style="margin-top:1rem;">${icon('messageCircle')} WhatsApp Us</a>
     </div>`;
 
-  return `<section id="callback" class="section">
+  return `<section id="${sectionId}" class="section-tight">
   <div class="container">
     <div class="${showPanel ? 'split-panel' : ''}">
       ${formHtml}
       ${showPanel ? panelHtml : ''}
+    </div>
+  </div>
+</section>`;
+}
+
+// Compact "Need Recovery?" CTA band used near the top of service and
+// location pages — heading + one line of supporting copy + the
+// standard Call/WhatsApp/Callback button row. Pairs with the compact
+// callback form rendered immediately below it (same #callback anchor).
+function renderNeedRecoveryBand(opts) {
+  opts = opts || {};
+  const heading = opts.heading || 'Need Recovery?';
+  const leadHtml =
+    opts.leadHtml ||
+    `Call <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click">${escapeHtml(SITE_CONFIG.phoneDisplay)}</a> for 24/7 vehicle recovery enquiries.`;
+  return `<section class="section-tight">
+  <div class="container">
+    <div class="safe-panel" style="max-width:46rem;">
+      <h2 style="margin:0;font-size:1.25rem;font-weight:600;font-family:var(--font-display);">${escapeHtml(heading)}</h2>
+      <p style="margin-top:0.5rem;color:var(--muted-foreground);">${leadHtml}</p>
+      <div class="btn-row">
+        ${ctaButtons()}
+      </div>
     </div>
   </div>
 </section>`;
@@ -644,7 +657,7 @@ function renderFinalCta(opts) {
       <h2>${escapeHtml(heading)}</h2>
       <p>${escapeHtml(lead)}</p>
       <div class="btn-row center">
-        ${ctaButtons({ whatsappLabel: 'Request on WhatsApp' })}
+        ${ctaButtons(opts.callbackHref ? { callbackHref: opts.callbackHref } : {})}
       </div>
     </div>
   </div>
@@ -685,7 +698,7 @@ function renderFooter() {
         <ul>
           <li><a href="/about">About</a></li>
           <li><a href="/contact">Contact</a></li>
-          <li><a href="/booking">Book Recovery</a></li>
+          <li><a href="/booking">Planned Transport</a></li>
           <li><a href="/privacy">Privacy Policy</a></li>
           <li><a href="/terms">Terms &amp; Conditions</a></li>
         </ul>
@@ -705,7 +718,7 @@ function renderFooter() {
 function renderStickyBar() {
   return `<div class="sticky-actions">
   <div class="sticky-actions__inner">
-    <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary">${icon('phone')} Call for Recovery</a>
+    <a href="${SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary" aria-label="Call ${escapeHtml(SITE_CONFIG.phoneDisplay)}">${icon('phone')} Call ${escapeHtml(SITE_CONFIG.phoneDisplay)}</a>
     <a href="${SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline" aria-label="Message us on WhatsApp">${icon('messageCircle')} WhatsApp</a>
   </div>
 </div>`;
@@ -750,6 +763,7 @@ module.exports = {
   renderTrustStrip,
   renderServicesGrid,
   renderCallbackForm,
+  renderNeedRecoveryBand,
   hiddenTrackingFields,
   honeypotField,
   renderRoadCoverage,

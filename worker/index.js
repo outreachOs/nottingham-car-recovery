@@ -4,9 +4,18 @@
  * Single architecture, single handler. Serves the static site via
  * the ASSETS binding and exposes exactly one API route:
  *
- *   POST /notify   — receives the callback / booking / contact
- *                    forms and forwards a plain-text summary to a
+ *   POST /notify   — receives the callback form (used sitewide: home,
+ *                    contact, every service page, every location page)
+ *                    and the planned-transport form (booking page),
+ *                    and forwards a concise plain-text summary to a
  *                    Telegram chat via the Bot API.
+ *
+ * Two form types are accepted, distinguished by the `form_name` field:
+ *
+ *   callback          — the two-field urgent-recovery route.
+ *                        Required: name, phone.
+ *   planned_transport — the booking-page route for planned/advance jobs.
+ *                        Required: name, phone, collection, destination.
  *
  * Accepted request bodies (see readPayload() below):
  *   - application/json                  — parsed with JSON.parse
@@ -35,33 +44,28 @@ const SECURITY_HEADERS = {
   'X-Frame-Options': 'DENY'
 };
 
-// Fields we accept from any of the three forms. Unknown fields are ignored.
+// Fields we accept from either form. Unknown fields are ignored.
 const KNOWN_FIELDS = [
   'form_name',
+  // Shared
   'name',
   'phone',
-  'email',
-  'help',
-  'area',
-  'message',
-  'vehicle_make_model',
-  'registration',
-  'collection_address',
+  // planned_transport only
+  'vehicle',
+  'collection',
   'destination',
-  'preferred_date',
-  'preferred_time',
+  'preferredDate',
   'starts',
   'rolls',
   'steers',
   'brakes',
-  'keys_available',
-  'damage_notes',
-  'access_restrictions',
-  'additional_notes',
-  'consent',
-  'source_page',
-  'page_title',
-  'page_url',
+  'keys',
+  'access',
+  'notes',
+  // Hidden/technical fields, both forms
+  'sourcePage',
+  'pageTitle',
+  'currentUrl',
   'referrer',
   'timestamp',
   'utm_source',
@@ -72,6 +76,10 @@ const KNOWN_FIELDS = [
   'gclid',
   'msclkid'
 ];
+
+// Fields long enough to need the higher character limit (freeform text
+// rather than a short value like a name or postcode).
+const LONG_FIELDS = new Set(['notes', 'access']);
 
 function withSecurityHeaders(response) {
   const headers = new Headers(response.headers);
@@ -215,8 +223,7 @@ async function readPayload(request) {
 function buildCleanFields(data) {
   const clean = {};
   for (const key of KNOWN_FIELDS) {
-    const isLong = key === 'message' || key === 'damage_notes' || key === 'additional_notes' || key === 'access_restrictions';
-    clean[key] = sanitizeText(data[key], isLong ? MAX_FIELD_LENGTH : MAX_SHORT_FIELD_LENGTH);
+    clean[key] = sanitizeText(data[key], LONG_FIELDS.has(key) ? MAX_FIELD_LENGTH : MAX_SHORT_FIELD_LENGTH);
   }
   return clean;
 }
@@ -229,103 +236,97 @@ function validate(clean, honeypotValue) {
     return { spam: true, errors: [] };
   }
 
+  const isPlannedTransport = clean.form_name === 'planned_transport';
+
   if (!clean.name) errors.push('Name is required.');
-  if (!clean.phone && !clean.email) errors.push('A phone number or email address is required.');
-  if (clean.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean.email)) {
-    errors.push('Enter a valid email address.');
-  }
-  if (clean.phone && !/^[0-9+()\s-]{7,20}$/.test(clean.phone)) {
+
+  if (!clean.phone) {
+    errors.push('Phone number is required.');
+  } else if (!/^[0-9+()\s-]{7,20}$/.test(clean.phone)) {
     errors.push('Enter a valid phone number.');
+  }
+
+  if (isPlannedTransport) {
+    if (!clean.collection) errors.push('Collection area or postcode is required.');
+    if (!clean.destination) errors.push('Destination area or postcode is required.');
   }
 
   return { spam: false, errors };
 }
 
-function formLabel(formName) {
-  const labels = {
-    callback: 'Homepage Callback Request',
-    booking: 'Booking / Recovery Request',
-    contact: 'Contact Form Enquiry'
-  };
-  return labels[formName] || 'Website Enquiry';
+// "Source" is shown as the page title where available (more readable
+// on a phone at a glance than a raw path), falling back to the path.
+function sourceLabel(clean) {
+  return clean.pageTitle || clean.sourcePage || 'Unknown page';
 }
 
-function buildTelegramMessage(clean) {
+function trackingLines(clean) {
   const lines = [];
-  lines.push(`New enquiry: ${formLabel(clean.form_name)}`);
-  lines.push('');
-  lines.push(`Source page: ${clean.source_page || 'unknown'}`);
-  if (clean.page_title) lines.push(`Page title: ${clean.page_title}`);
-  lines.push('');
-  lines.push('Contact details');
-  if (clean.name) lines.push(`Name: ${clean.name}`);
-  if (clean.phone) lines.push(`Phone: ${clean.phone}`);
-  if (clean.email) lines.push(`Email: ${clean.email}`);
+  if (clean.utm_source) lines.push(`utm_source: ${clean.utm_source}`);
+  if (clean.utm_medium) lines.push(`utm_medium: ${clean.utm_medium}`);
+  if (clean.utm_campaign) lines.push(`utm_campaign: ${clean.utm_campaign}`);
+  if (clean.utm_term) lines.push(`utm_term: ${clean.utm_term}`);
+  if (clean.utm_content) lines.push(`utm_content: ${clean.utm_content}`);
+  if (clean.gclid) lines.push(`gclid: ${clean.gclid}`);
+  if (clean.msclkid) lines.push(`msclkid: ${clean.msclkid}`);
+  return lines;
+}
 
-  if (clean.help || clean.area) {
-    lines.push('');
-    lines.push('Enquiry');
-    if (clean.help) lines.push(`Service needed: ${clean.help}`);
-    if (clean.area) lines.push(`Collection area: ${clean.area}`);
-  }
+// Deliberately short: name, phone, source and time only, plus UTM/ad
+// click-id data when present. No location, vehicle, destination, email
+// or other long/empty fields — this is the urgent-recovery lead route
+// and needs to be readable on a phone at a glance.
+function buildCallbackMessage(clean) {
+  const lines = ['NEW CALLBACK LEAD', ''];
+  lines.push(`Name: ${clean.name}`);
+  lines.push(`Phone: ${clean.phone}`);
+  lines.push(`Source: ${sourceLabel(clean)}`);
+  lines.push(`Time: ${clean.timestamp || new Date().toISOString()}`);
 
-  if (clean.vehicle_make_model || clean.registration) {
-    lines.push('');
-    lines.push('Vehicle');
-    if (clean.vehicle_make_model) lines.push(`Make/model: ${clean.vehicle_make_model}`);
-    if (clean.registration) lines.push(`Registration: ${clean.registration}`);
-  }
-
-  if (clean.collection_address || clean.destination) {
-    lines.push('');
-    lines.push('Locations');
-    if (clean.collection_address) lines.push(`Collection point: ${clean.collection_address}`);
-    if (clean.destination) lines.push(`Destination: ${clean.destination}`);
-  }
-
-  if (clean.preferred_date || clean.preferred_time) {
-    lines.push('');
-    lines.push('Preferred timing');
-    if (clean.preferred_date) lines.push(`Date: ${clean.preferred_date}`);
-    if (clean.preferred_time) lines.push(`Time: ${clean.preferred_time}`);
-  }
-
-  if (clean.starts || clean.rolls || clean.steers || clean.brakes || clean.keys_available) {
-    lines.push('');
-    lines.push('Vehicle condition');
-    if (clean.starts) lines.push(`Starts: ${clean.starts}`);
-    if (clean.rolls) lines.push(`Rolls: ${clean.rolls}`);
-    if (clean.steers) lines.push(`Steers: ${clean.steers}`);
-    if (clean.brakes) lines.push(`Brakes: ${clean.brakes}`);
-    if (clean.keys_available) lines.push(`Keys available: ${clean.keys_available}`);
-  }
-
-  if (clean.damage_notes) lines.push(`\nDamage notes: ${clean.damage_notes}`);
-  if (clean.access_restrictions) lines.push(`Access restrictions: ${clean.access_restrictions}`);
-  if (clean.message) lines.push(`\nMessage: ${clean.message}`);
-  if (clean.additional_notes) lines.push(`Additional notes: ${clean.additional_notes}`);
-
-  const tracking = [];
-  if (clean.utm_source) tracking.push(`utm_source=${clean.utm_source}`);
-  if (clean.utm_medium) tracking.push(`utm_medium=${clean.utm_medium}`);
-  if (clean.utm_campaign) tracking.push(`utm_campaign=${clean.utm_campaign}`);
-  if (clean.utm_term) tracking.push(`utm_term=${clean.utm_term}`);
-  if (clean.utm_content) tracking.push(`utm_content=${clean.utm_content}`);
-  if (clean.gclid) tracking.push(`gclid=${clean.gclid}`);
-  if (clean.msclkid) tracking.push(`msclkid=${clean.msclkid}`);
-  if (clean.referrer) tracking.push(`referrer=${clean.referrer}`);
+  const tracking = trackingLines(clean);
   if (tracking.length) {
     lines.push('');
-    lines.push('Tracking');
-    lines.push(tracking.join('\n'));
+    lines.push(...tracking);
   }
 
-  lines.push('');
-  lines.push(`Submitted: ${clean.timestamp || new Date().toISOString()}`);
-
-  // Plain text — no Markdown/HTML parse mode is used, so no special
-  // Telegram formatting characters need to be escaped.
   return lines.join('\n').slice(0, 4096);
+}
+
+function buildPlannedTransportMessage(clean) {
+  const lines = ['NEW PLANNED TRANSPORT REQUEST', ''];
+  lines.push(`Name: ${clean.name}`);
+  lines.push(`Phone: ${clean.phone}`);
+  if (clean.vehicle) lines.push(`Vehicle: ${clean.vehicle}`);
+  lines.push(`Collection: ${clean.collection}`);
+  lines.push(`Destination: ${clean.destination}`);
+  if (clean.preferredDate) lines.push(`Preferred date: ${clean.preferredDate}`);
+  if (clean.starts) lines.push(`Starts: ${clean.starts}`);
+
+  const loading = [];
+  if (clean.rolls) loading.push(`Rolls: ${clean.rolls}`);
+  if (clean.steers) loading.push(`Steers: ${clean.steers}`);
+  if (clean.brakes) loading.push(`Brakes: ${clean.brakes}`);
+  if (clean.keys) loading.push(`Keys: ${clean.keys}`);
+  if (clean.access) loading.push(`Access: ${clean.access}`);
+  if (loading.length) lines.push(`Additional loading details: ${loading.join('; ')}`);
+
+  if (clean.notes) lines.push(`Notes: ${clean.notes}`);
+
+  lines.push(`Source: ${sourceLabel(clean)}`);
+  lines.push(`Time: ${clean.timestamp || new Date().toISOString()}`);
+
+  // The spec's planned-transport message format ends at Time — unlike
+  // the callback message, UTM/ad click-id data is not appended here,
+  // keeping this already-longer message quick to scan on a phone.
+  return lines.join('\n').slice(0, 4096);
+}
+
+// Plain text — no Markdown/HTML parse mode is used, so no special
+// Telegram formatting characters need to be escaped.
+function buildTelegramMessage(clean) {
+  return clean.form_name === 'planned_transport'
+    ? buildPlannedTransportMessage(clean)
+    : buildCallbackMessage(clean);
 }
 
 async function sendTelegramMessage(env, text) {
@@ -370,7 +371,7 @@ async function handleNotify(request, env) {
   }
 
   const clean = buildCleanFields(data);
-  const honeypotValue = sanitizeText(data.website, MAX_SHORT_FIELD_LENGTH);
+  const honeypotValue = sanitizeText(data.honeypot, MAX_SHORT_FIELD_LENGTH);
   const { spam, errors } = validate(clean, honeypotValue);
 
   if (spam) {

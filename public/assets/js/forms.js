@@ -1,9 +1,10 @@
 /*!
  * Nottingham Car Recovery — forms.js
- * Progressive enhancement for the callback, booking and contact
- * forms. Without JavaScript the forms still submit (standard POST
- * to /notify). With JavaScript, submission happens via fetch with
- * inline validation, a submitting state and success/error banners.
+ * Progressive enhancement for the callback form (used sitewide) and the
+ * planned-transport form (booking page). Without JavaScript the forms
+ * still submit (standard POST to /notify). With JavaScript, submission
+ * happens via fetch with inline validation, a submitting state and
+ * success/error banners.
  */
 (function () {
   'use strict';
@@ -20,9 +21,9 @@
 
   function populateTrackingFields(form) {
     var map = {
-      source_page: window.location.pathname,
-      page_title: document.title,
-      page_url: window.location.href,
+      sourcePage: window.location.pathname,
+      pageTitle: document.title,
+      currentUrl: window.location.href,
       referrer: document.referrer || '',
       timestamp: new Date().toISOString(),
       utm_source: qs('utm_source'),
@@ -97,17 +98,29 @@
     return valid;
   }
 
-  function showBanner(form, type, message) {
+  function phoneLinkHtml() {
+    var cfg = window.SITE_CONFIG || {};
+    var display = cfg.phoneDisplay || '';
+    var href = cfg.phoneHref || 'tel:';
+    return '<a href="' + href + '" data-cta="call" data-track="phone-click">' + display + '</a>';
+  }
+
+  function showBanner(form, type, message, isHtml) {
     var banner = form.querySelector('.form-banner');
     if (!banner) return;
     banner.className = 'form-banner ' + type + ' is-visible';
-    banner.textContent = message;
+    if (isHtml) {
+      banner.innerHTML = message;
+    } else {
+      banner.textContent = message;
+    }
     banner.setAttribute('role', type === 'error' ? 'alert' : 'status');
     banner.setAttribute('tabindex', '-1');
     banner.focus();
   }
 
   function setSubmitting(form, isSubmitting) {
+    form.dataset.submitting = isSubmitting ? 'true' : 'false';
     var button = form.querySelector('[type="submit"]');
     if (!button) return;
     button.disabled = isSubmitting;
@@ -126,8 +139,15 @@
 
   function handleSubmit(form) {
     return function (event) {
+      // Prevent duplicate submissions (double-click, or Enter pressed
+      // again) while a request is already in flight.
+      if (form.dataset.submitting === 'true') {
+        event.preventDefault();
+        return;
+      }
+
       // Honeypot: if filled, silently drop the submission but pretend success.
-      var honeypot = form.querySelector('input[name="website"]');
+      var honeypot = form.querySelector('input[name="honeypot"]');
       if (honeypot && honeypot.value) {
         event.preventDefault();
         showBanner(form, 'success', 'Thanks — your request has been received.');
@@ -145,6 +165,8 @@
       event.preventDefault();
       populateTrackingFields(form);
       setSubmitting(form, true);
+
+      var isCallback = formNameOf(form) === 'callback';
 
       var formData = new FormData(form);
       var payload = {};
@@ -169,15 +191,28 @@
         .then(function (result) {
           setSubmitting(form, false);
           if (result.ok && result.data && result.data.success) {
-            showBanner(
-              form,
-              'success',
-              'Thanks — your request has been received. We will contact you shortly. This is a request only and is not confirmed until details are agreed.'
-            );
+            if (isCallback) {
+              showBanner(
+                form,
+                'success',
+                "Callback request received. We'll use the number provided to contact you about your recovery enquiry. Need to speak now? Call " +
+                  phoneLinkHtml() +
+                  '.',
+                true
+              );
+            } else {
+              showBanner(
+                form,
+                'success',
+                'Thanks — your request has been received. We will contact you shortly. This is a request only and is not confirmed until details are agreed.'
+              );
+            }
             form.reset();
             document.dispatchEvent(
               new CustomEvent('ncr:form-success', { detail: { form: formNameOf(form) } })
             );
+          } else if (isCallback) {
+            showBanner(form, 'error', 'We could not send your callback request. Please call ' + phoneLinkHtml() + '.', true);
           } else {
             showBanner(
               form,
@@ -189,11 +224,15 @@
         })
         .catch(function () {
           setSubmitting(form, false);
-          showBanner(
-            form,
-            'error',
-            'We could not reach the server. Please check your connection and try again, or call/WhatsApp us directly.'
-          );
+          if (isCallback) {
+            showBanner(form, 'error', 'We could not send your callback request. Please call ' + phoneLinkHtml() + '.', true);
+          } else {
+            showBanner(
+              form,
+              'error',
+              'We could not reach the server. Please check your connection and try again, or call/WhatsApp us directly.'
+            );
+          }
         });
     };
   }

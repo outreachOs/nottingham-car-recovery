@@ -123,7 +123,7 @@ function write404() {
       <div class="btn-row">
         <a href="/" class="btn btn-primary">Return to the Homepage</a>
         <a href="/services" class="btn btn-outline">View Services</a>
-        <a href="/contact" class="btn btn-outline">Contact Us</a>
+        <a href="/contact#callback" class="btn btn-outline">Request a Callback</a>
       </div>
     </div>
   </div>

@@ -203,6 +203,12 @@ input, textarea, select {
   color: var(--primary);
 }
 
+.eyebrow svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
 .section-head {
   max-width: 42rem;
 }
@@ -483,9 +489,11 @@ input, textarea, select {
   color: var(--foreground);
 }
 
-.primary-nav summary svg {
+.primary-nav summary svg,
+.nav-dropdown summary svg {
   width: 0.85rem;
   height: 0.85rem;
+  flex-shrink: 0;
   opacity: 0.7;
   transition: transform 0.15s ease;
 }
@@ -531,10 +539,21 @@ input, textarea, select {
 }
 
 .nav-dropdown--mobile summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   padding: 0.875rem 0.75rem;
   font-size: 1rem;
   font-weight: 500;
   color: var(--foreground);
+  cursor: pointer;
+  list-style: none;
+}
+
+.nav-dropdown--mobile summary::-webkit-details-marker,
+.nav-dropdown--mobile summary::marker {
+  display: none;
+  content: '';
 }
 
 .nav-dropdown--mobile .nav-dropdown__panel {
@@ -1083,8 +1102,18 @@ input, textarea, select {
 }
 
 .numbered-list span.txt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.9375rem;
   font-weight: 500;
+}
+
+.numbered-list span.txt svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--primary);
 }
 
 /* ----------------------------------------------------------------
@@ -1414,6 +1443,51 @@ input, textarea, select {
   color: var(--muted-foreground);
 }
 
+/* Progressive disclosure ("Additional loading information") on the
+   planned transport form. Native <details>/<summary> — keyboard and
+   screen-reader accessible with no JavaScript required. */
+.form-disclosure {
+  margin-top: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.form-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 44px;
+  padding: 0.875rem 1.125rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.form-disclosure summary::-webkit-details-marker,
+.form-disclosure summary::marker {
+  display: none;
+  content: '';
+}
+
+.form-disclosure summary::after {
+  content: '+';
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.form-disclosure[open] summary::after {
+  content: '\2212';
+}
+
+.form-disclosure__body {
+  padding: 0 1.125rem 1.25rem;
+}
+
 /* ----------------------------------------------------------------
    16. Callback / two-column panel section
 ------------------------------------------------------------------- */
@@ -1677,8 +1751,17 @@ input, textarea, select {
 }
 
 .safety-box h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1rem;
   color: #ff9a9d;
+}
+
+.safety-box h3 svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
 }
 
 .safety-box ol {
@@ -1819,14 +1902,31 @@ input, textarea, select {
 
 .sticky-actions__inner {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   max-width: 28rem;
   margin-inline: auto;
-  padding: 0.75rem 1rem;
+  padding: 0.625rem 0.75rem;
 }
 
 .sticky-actions .btn-primary {
   flex: 1;
+  min-width: 0;
+}
+
+/* The primary label now includes the full phone number ("Call 07865
+   449983"), which is too long to guarantee a single line at 320px.
+   Allow it to wrap to two lines instead of overflowing or clipping —
+   min-height (not height) on .btn already lets the button grow. */
+.sticky-actions .btn {
+  white-space: normal;
+  text-align: center;
+  padding-inline: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+}
+
+.sticky-actions .btn-outline {
+  flex-shrink: 0;
 }
 
 body.has-sticky-actions {
@@ -1836,6 +1936,15 @@ body.has-sticky-actions {
 @media (min-width: 1024px) {
   body.has-sticky-actions {
     padding-bottom: 0;
+  }
+}
+
+/* Narrow phones are the most likely to wrap the primary label onto two
+   lines — reserve a little extra body padding so the footer is never
+   covered by a taller sticky bar. */
+@media (max-width: 380px) {
+  :root {
+    --sticky-bar-height: 92px;
   }
 }
 

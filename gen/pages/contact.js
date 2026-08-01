@@ -15,6 +15,11 @@ function build() {
     breadcrumbs
   });
 
+  const needRecoveryNow = C.renderNeedRecoveryBand({
+    heading: 'Need Vehicle Recovery Now?',
+    leadHtml: `Call <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" style="font-weight:700;color:var(--primary);">${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a>. Available ${C.escapeHtml(C.SITE_CONFIG.serviceHours)}.`
+  });
+
   const contactActions = `<section class="section">
   <div class="container">
     <div class="two-col layout-main-aside">
@@ -24,10 +29,6 @@ function build() {
           <p>Choose whichever contact method suits your situation. If you are dealing with a breakdown or accident, please make sure you are safely positioned away from moving traffic before making contact.</p>
         </div>
 
-        <div class="btn-row" style="margin-top:1.5rem;">
-          <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary">${C.icon('phone')} Call Us</a>
-          <a href="${C.SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline">${C.icon('messageCircle')} WhatsApp Us</a>
-        </div>
         <p style="margin-top:0.75rem;font-size:0.8125rem;color:var(--muted-foreground);">No business email is available yet — please call, WhatsApp or use the callback form below.</p>
 
         <div class="safety-box" style="margin-top:2rem;">
@@ -56,17 +57,21 @@ function build() {
   </div>
 </section>`;
 
-  const contactFormSection = C.renderCallbackForm({
-    formId: 'contact-form',
-    formName: 'contact',
-    showPanel: false,
-    heading: 'Request a Callback',
-    lead: 'Prefer us to call you back? Leave your details and a short message.'
-  });
+  const callbackForm = C.renderCallbackForm({ formId: 'contact-form', showPanel: false });
+
+  const plannedTransportLink = `<section class="section-tight">
+  <div class="container">
+    <p style="text-align:center;font-size:0.9375rem;color:var(--muted-foreground);">
+      Arranging vehicle transport in advance? Use the <a href="/booking">planned transport request form</a>.
+    </p>
+  </div>
+</section>`;
 
   const content = `${hero}
+${needRecoveryNow}
 ${contactActions}
-${contactFormSection}`;
+${callbackForm}
+${plannedTransportLink}`;
 
   return {
     path: '/contact',

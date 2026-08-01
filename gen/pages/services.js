@@ -15,7 +15,8 @@ function build() {
     title: 'Vehicle Recovery Services in Nottingham',
     lead:
       'From a single breakdown to a planned garage-to-garage transport job, this page is an overview of every recovery service available across Nottingham and surrounding areas. Choose a service below for full detail.',
-    breadcrumbs
+    breadcrumbs,
+    callbackHref: '/contact#callback'
   });
 
   const emergencyVsPlanned = `<section class="section">
@@ -43,10 +44,10 @@ function build() {
         <ul>
           ${SERVICES.map((s) => `<li><a href="${s.href}">${s.title}</a></li>`).join('\n')}
         </ul>
-        <div class="callout-link">
+        <a href="/contact#callback" class="callout-link">
           <strong>Not sure which service you need?</strong>
           Request a callback and describe your situation — we will point you to the right option.
-        </div>
+        </a>
       </aside>
     </div>
   </div>
@@ -59,7 +60,7 @@ ${C.renderServicesGrid({
 })}
 ${emergencyVsPlanned}
 ${C.renderDestinations()}
-${C.renderFinalCta({ heading: 'Ready to Request Recovery?' })}`;
+${C.renderFinalCta({ heading: 'Ready to Request Recovery?', callbackHref: '/contact#callback' })}`;
 
   return {
     path: '/services',

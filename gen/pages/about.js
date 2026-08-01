@@ -13,7 +13,8 @@ function build() {
     title: 'About Nottingham Car Recovery',
     lead:
       'A straightforward vehicle recovery service covering Nottingham and surrounding areas — clear communication, a confirmed quote, and a destination that suits you.',
-    breadcrumbs
+    breadcrumbs,
+    callbackHref: '/contact#callback'
   });
 
   const content = `${hero}
@@ -47,7 +48,7 @@ function build() {
         <h3>Get in touch</h3>
         <ul>
           <li><a href="/contact">Contact page</a></li>
-          <li><a href="/booking">Request recovery</a></li>
+          <li><a href="/booking">Request planned transport</a></li>
           <li><a href="/services">All services</a></li>
           <li><a href="/areas">Areas covered</a></li>
         </ul>
@@ -55,7 +56,7 @@ function build() {
     </div>
   </div>
 </section>
-${C.renderFinalCta({ heading: 'Ready to Get Started?' })}`;
+${C.renderFinalCta({ heading: 'Ready to Get Started?', callbackHref: '/contact#callback' })}`;
 
   return {
     path: '/about',

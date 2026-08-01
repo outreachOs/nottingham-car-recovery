@@ -364,15 +364,166 @@ if (headersSrc.includes('unsafe-eval')) {
   pass('_headers CSP includes narrow GA4/Clarity allowances, no unsafe-eval, no wildcard-only policy.');
 }
 
-// GA4 event names use underscores
+// GA4 event names match the CRO spec exactly
 const trackingSrc = fs.readFileSync(path.join(PUBLIC_DIR, 'assets', 'js', 'tracking.js'), 'utf8');
-if (trackingSrc.includes('callback_submit') && trackingSrc.includes('booking_submit') && trackingSrc.includes('contact_submit') && trackingSrc.includes('generate_lead')) {
-  pass('GA4 event names use underscores (callback_submit, booking_submit, contact_submit, generate_lead).');
+if (trackingSrc.includes('callback_submit') && trackingSrc.includes('planned_transport_submit') && trackingSrc.includes('generate_lead')) {
+  pass('GA4 event names match spec (callback_submit, planned_transport_submit, generate_lead).');
 } else {
-  fail('tracking.js event names do not match the required underscored names');
+  fail('tracking.js event names do not match the required names (callback_submit, planned_transport_submit)');
 }
-if (trackingSrc.includes('callback-submit') || trackingSrc.includes('booking-submit') || trackingSrc.includes('contact-submit')) {
-  fail('tracking.js still contains old hyphenated event names');
+if (trackingSrc.includes('booking_submit') || trackingSrc.includes('contact_submit') || /callback-submit|booking-submit|contact-submit/.test(trackingSrc)) {
+  fail('tracking.js still contains retired event names (booking_submit/contact_submit or hyphenated variants)');
+}
+
+// ------------------------------------------------------------------
+// Conversion-rate-optimisation pass checks (section 19 of the CRO spec)
+// ------------------------------------------------------------------
+
+// Pages that must contain the compact, exactly-2-field callback form.
+const CALLBACK_FORM_PAGES = [
+  'index.html', 'contact.html',
+  'breakdown-recovery-nottingham.html', 'accident-recovery-nottingham.html',
+  'm1-breakdown-recovery-nottingham.html', 'car-towing-vehicle-transport-nottingham.html',
+  'van-commercial-recovery-nottingham.html', 'auction-non-runner-collection-nottingham.html',
+  'car-recovery-west-bridgford.html', 'car-recovery-beeston.html', 'car-recovery-arnold.html',
+  'car-recovery-hucknall.html', 'car-recovery-carlton-gedling.html', 'car-recovery-bulwell.html',
+  'car-recovery-clifton.html', 'car-recovery-long-eaton.html'
+];
+
+let callbackFieldsOk = true;
+for (const f of CALLBACK_FORM_PAGES) {
+  const html = pageHtml[f];
+  const formMatch = html.match(/<form[^>]*data-form-name="callback"[\s\S]*?<\/form>/);
+  if (!formMatch) {
+    fail(`${f}: no data-form-name="callback" form found`);
+    callbackFieldsOk = false;
+    continue;
+  }
+  const formHtml = formMatch[0];
+  const visibleInputs = [...formHtml.matchAll(/<(input|select|textarea)\b([^>]*)>/g)].filter((m) => {
+    const attrs = m[2];
+    return !/type="hidden"/.test(attrs) && !/id="honeypot"/.test(attrs);
+  });
+  const names = visibleInputs.map((m) => (m[2].match(/name="([^"]+)"/) || [])[1]);
+  const expected = ['name', 'phone'];
+  if (names.length !== 2 || names[0] !== 'name' || names[1] !== 'phone') {
+    fail(`${f}: callback form visible fields are [${names.join(', ')}], expected exactly [name, phone]`);
+    callbackFieldsOk = false;
+  }
+  for (const m of visibleInputs) {
+    if (!/\brequired\b/.test(m[2])) {
+      fail(`${f}: callback form field "${(m[2].match(/name="([^"]+)"/) || [])[1]}" is not required`);
+      callbackFieldsOk = false;
+    }
+  }
+  const forbiddenFieldNames = ['email', 'location', 'postcode', 'vehicle', 'registration', 'service', 'destination', 'message', 'consent'];
+  for (const bad of forbiddenFieldNames) {
+    if (new RegExp(`name="${bad}"`).test(formHtml)) {
+      fail(`${f}: callback form unexpectedly includes a "${bad}" field`);
+      callbackFieldsOk = false;
+    }
+  }
+  if (/type="checkbox"/.test(formHtml)) {
+    fail(`${f}: callback form includes a checkbox (consent checkbox must not be present)`);
+    callbackFieldsOk = false;
+  }
+  if (!formHtml.includes('Request My Callback')) {
+    fail(`${f}: callback form submit button is not "Request My Callback"`);
+    callbackFieldsOk = false;
+  }
+  if (!formHtml.includes('id="honeypot"') || !formHtml.includes('name="honeypot"')) {
+    fail(`${f}: callback form is missing the honeypot field`);
+    callbackFieldsOk = false;
+  }
+}
+if (callbackFieldsOk) {
+  pass(`All ${CALLBACK_FORM_PAGES.length} callback forms (home, contact, 6 service pages, 8 location pages) have exactly 2 required visible fields (name, phone), no email/location/vehicle/message/consent fields, and the correct submit label.`);
+}
+
+// Booking page: planned-transport form field/requirement check
+const bookingHtml = pageHtml['booking.html'];
+if (!/<h1[^>]*>Request Planned Vehicle Transport<\/h1>/.test(bookingHtml)) {
+  fail('booking.html: H1 is not exactly "Request Planned Vehicle Transport"');
+} else {
+  pass('booking.html H1 is "Request Planned Vehicle Transport".');
+}
+if (bookingHtml.includes('type="checkbox"')) {
+  fail('booking.html: planned transport form includes a checkbox (consent checkbox must be removed)');
+} else {
+  pass('booking.html planned transport form has no consent checkbox.');
+}
+if (!bookingHtml.includes('data-form-name="planned_transport"')) {
+  fail('booking.html: form is not marked data-form-name="planned_transport"');
+}
+const requiredPtFieldNames = ['name', 'phone', 'collection', 'destination'];
+const missingPt = requiredPtFieldNames.filter((n) => !new RegExp(`<input[^>]*name="${n}"[^>]*required`).test(bookingHtml));
+if (missingPt.length) {
+  fail(`booking.html: expected required fields not marked required: ${missingPt.join(', ')}`);
+} else {
+  pass('booking.html required fields (name, phone, collection, destination) are all marked required.');
+}
+if (!/<details class="form-disclosure">/.test(bookingHtml) || / open>/.test(bookingHtml.match(/<details class="form-disclosure">/) ? bookingHtml : '')) {
+  fail('booking.html: progressive disclosure <details> not found or not collapsed by default');
+} else {
+  pass('booking.html progressive disclosure section present and collapsed by default.');
+}
+if (!bookingHtml.includes('Submitting this form is a request only.')) {
+  fail('booking.html: missing the required "request only" legal notice');
+} else {
+  pass('booking.html includes the required "request only" legal notice.');
+}
+if (!bookingHtml.includes('Request Planned Transport<')) {
+  fail('booking.html: submit button is not "Request Planned Transport"');
+} else {
+  pass('booking.html submit button is "Request Planned Transport".');
+}
+if (!/Broken down or need recovery now/.test(bookingHtml) || !/tel:07865449983/.test(bookingHtml)) {
+  fail('booking.html: missing the urgent-recovery notice with a working call link');
+} else {
+  pass('booking.html has the urgent-recovery notice with a working tel: link.');
+}
+
+// Homepage hero: phone visible, 24/7 line, call-now instruction
+const homeHtml = pageHtml['index.html'];
+if (!/Available 24 hours a day, 7 days a week\./.test(homeHtml)) {
+  fail('index.html: hero is missing "Available 24 hours a day, 7 days a week."');
+} else {
+  pass('Homepage hero includes "Available 24 hours a day, 7 days a week."');
+}
+if (!/Call now and tell us where you are/.test(homeHtml)) {
+  fail('index.html: hero is missing the "Call now and tell us..." instruction line');
+} else {
+  pass('Homepage hero includes the "Call now and tell us..." instruction line.');
+}
+
+// Header: desktop call CTA shows the real number
+if (!/header-call[\s\S]*?Call 07865 449983/.test(homeHtml)) {
+  fail('index.html: desktop header call button does not read "Call 07865 449983"');
+} else {
+  pass('Desktop header call button reads "Call 07865 449983".');
+}
+
+// Sticky bar: exactly 2 actions, no third callback button
+for (const f of ['index.html', 'contact.html', 'booking.html']) {
+  const stickyMatch = pageHtml[f].match(/<div class="sticky-actions">[\s\S]*?<\/div>\s*<\/div>/);
+  if (!stickyMatch) {
+    fail(`${f}: sticky-actions bar not found`);
+    continue;
+  }
+  const stickyLinks = [...stickyMatch[0].matchAll(/<a[^>]*data-cta="([^"]+)"/g)].map((m) => m[1]);
+  if (stickyLinks.length !== 2 || stickyLinks[0] !== 'call' || stickyLinks[1] !== 'whatsapp') {
+    fail(`${f}: sticky bar actions are [${stickyLinks.join(', ')}], expected exactly [call, whatsapp]`);
+  }
+}
+pass('Sticky mobile action bar has exactly 2 actions (call, whatsapp) with no third callback button, checked on a sample of pages.');
+
+// Van FAQ + HGV wording removed from body copy too
+if (/\bHGV\b/i.test(pageHtml['van-commercial-recovery-nottingham.html'].replace(/"@type":"Question","name":"[^"]*HGV[^"]*"/gi, ''))) {
+  // Only the FAQPage JSON-LD question text is allowed to be absent of HGV now; body prose should not mention it either.
+  const bodyOnly = pageHtml['van-commercial-recovery-nottingham.html'].replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+  if (/\bHGV\b/i.test(bodyOnly)) {
+    fail('van-commercial-recovery-nottingham.html: "HGV" wording still present in visible body copy');
+  }
 }
 
 // ---- Report ----

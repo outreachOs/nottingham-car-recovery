@@ -24,6 +24,12 @@ function buildLocationPage(opts) {
 
   const mainServices = opts.mainServiceHrefs.map(serviceByHref).filter(Boolean);
 
+  const needRecoveryBand = C.renderNeedRecoveryBand({
+    heading: `Need Vehicle Recovery in ${opts.name}?`,
+    leadHtml: `Call <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click">${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a> — available 24 hours a day.`
+  });
+  const callbackForm = C.renderCallbackForm({ showPanel: false });
+
   const body = `<section class="section">
   <div class="container">
     <div class="two-col layout-main-aside">
@@ -64,6 +70,8 @@ function buildLocationPage(opts) {
   const faq = C.renderFaqSection(opts.faqs, {});
 
   const content = `${hero}
+${needRecoveryBand}
+${callbackForm}
 ${body}
 ${faq.html}
 ${C.renderFinalCta({ heading: `Need Recovery in ${opts.name}?` })}`;
