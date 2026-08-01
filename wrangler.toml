@@ -1,0 +1,18 @@
+name = "nottingham-car-recovery"
+main = "worker/index.js"
+compatibility_date = "2024-09-25"
+
+# Static site (public/) served via Workers Assets.
+# html_handling = "auto-trailing-slash" (the default) automatically
+# serves /public/about.html at the clean URL /about, and normalises
+# trailing slashes — this is what gives the site its clean URLs
+# without needing a separate build step.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+
+# Secrets (set with `wrangler secret put <NAME>` — never commit real values):
+#   TELEGRAM_BOT_TOKEN
+#   TELEGRAM_CHAT_ID

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Nottingham Car Recovery">
+  <rect width="32" height="32" rx="7" fill="#080e12"/>
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="#ffb300"/>
+  <g transform="translate(6,9)" stroke="#161a1f" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 13h13v-4h4l3 4"/>
+    <path d="M2 9h9"/>
+    <circle cx="6.5" cy="14.3" r="1.6"/>
+    <circle cx="17.5" cy="14.3" r="1.6"/>
+    <path d="M4 6 9 2l4 2"/>
+  </g>
+</svg>
