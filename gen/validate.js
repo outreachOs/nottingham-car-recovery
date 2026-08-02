@@ -260,31 +260,31 @@ if (!footerFile.includes('href="/privacy"') || !footerFile.includes('href="/term
 // CSP, GA4 event names, van FAQ, email removal, 24/7 wording)
 // ------------------------------------------------------------------
 
-// All call links use tel:07865449983
+// All call links use tel:07488813738
 let telOk = true;
 for (const f of REQUIRED_PAGES) {
   const allTel = [...pageHtml[f].matchAll(/<a[^>]*data-cta="call"[^>]*>/g)].map((m) => (m[0].match(/href="([^"]*)"/) || [])[1]);
   for (const href of allTel) {
-    if (href !== 'tel:07865449983') {
-      fail(`${f}: call link href is "${href}", expected "tel:07865449983"`);
+    if (href !== 'tel:07488813738') {
+      fail(`${f}: call link href is "${href}", expected "tel:07488813738"`);
       telOk = false;
     }
   }
 }
-if (telOk) pass('All call links use tel:07865449983.');
+if (telOk) pass('All call links use tel:07488813738.');
 
-// All WhatsApp links use wa.me/447865449983
+// All WhatsApp links use wa.me/447488813738
 let waOk = true;
 for (const f of REQUIRED_PAGES) {
   const allWa = [...pageHtml[f].matchAll(/<a[^>]*data-cta="whatsapp"[^>]*>/g)].map((m) => (m[0].match(/href="([^"]*)"/) || [])[1]);
   for (const href of allWa) {
-    if (href !== 'https://wa.me/447865449983') {
-      fail(`${f}: WhatsApp link href is "${href}", expected "https://wa.me/447865449983"`);
+    if (href !== 'https://wa.me/447488813738') {
+      fail(`${f}: WhatsApp link href is "${href}", expected "https://wa.me/447488813738"`);
       waOk = false;
     }
   }
 }
-if (waOk) pass('All WhatsApp links use https://wa.me/447865449983.');
+if (waOk) pass('All WhatsApp links use https://wa.me/447488813738.');
 
 // No mailto: links, no email CTA, no empty/broken email references
 let emailOk = true;
@@ -350,9 +350,9 @@ for (const field of idFields) {
 if (idsBlank) pass('googleAnalyticsId, clarityProjectId, googleSiteVerification and bingSiteVerification remain blank.');
 
 // site-config.js contact/hours values match the requested correction
-if (configSrc.includes("phoneDisplay: '07865 449983'") &&
-    configSrc.includes("phoneHref: 'tel:07865449983'") &&
-    configSrc.includes("whatsappNumber: '447865449983'") &&
+if (configSrc.includes("phoneDisplay: '07488 813738'") &&
+    configSrc.includes("phoneHref: 'tel:07488813738'") &&
+    configSrc.includes("whatsappNumber: '447488813738'") &&
     configSrc.includes("businessEmail: ''") &&
     configSrc.includes("serviceHours: '24 hours a day, 7 days a week'") &&
     configSrc.includes('isTwentyFourSeven: true')) {
@@ -496,7 +496,7 @@ if (bookingMain.includes('Call Me Back')) {
 } else {
   pass('booking.html page content does not use "Call Me Back" wording (planned transport stays a separate journey).');
 }
-if (!/Need recovery now\?/.test(bookingHtml) || !/tel:07865449983/.test(bookingHtml) || !/https:\/\/wa\.me\/447865449983/.test(bookingHtml)) {
+if (!/Need recovery now\?/.test(bookingHtml) || !/tel:07488813738/.test(bookingHtml) || !/https:\/\/wa\.me\/447488813738/.test(bookingHtml)) {
   fail('booking.html: missing the urgent-recovery notice with working call/WhatsApp links');
 } else {
   pass('booking.html has the urgent-recovery notice with working call and WhatsApp links.');
@@ -516,10 +516,10 @@ if (!/Call now and tell us where you are/.test(homeHtml)) {
 }
 
 // Header: desktop call CTA shows the real number
-if (!/header-call[\s\S]*?Call 07865 449983/.test(homeHtml)) {
-  fail('index.html: desktop header call button does not read "Call 07865 449983"');
+if (!/header-call[\s\S]*?Call 07488 813738/.test(homeHtml)) {
+  fail('index.html: desktop header call button does not read "Call 07488 813738"');
 } else {
-  pass('Desktop header call button reads "Call 07865 449983".');
+  pass('Desktop header call button reads "Call 07488 813738".');
 }
 
 // Sticky bar: exactly 2 actions, no third callback button
@@ -673,10 +673,10 @@ if (/\d{1,2}(:\d{2})?\s*(am|pm|minutes|hours)\b/i.test(formsSrc.match(/Got it[\s
 }
 
 // Sticky bar accessible name includes business name + number
-if (!homeHtml.includes('aria-label="Call Nottingham Car Recovery on 07865 449983"')) {
-  fail('index.html: sticky/desktop call button is missing the required accessible name "Call Nottingham Car Recovery on 07865 449983"');
+if (!homeHtml.includes('aria-label="Call Nottingham Car Recovery on 07488 813738"')) {
+  fail('index.html: sticky/desktop call button is missing the required accessible name "Call Nottingham Car Recovery on 07488 813738"');
 } else {
-  pass('Call button accessible name is "Call Nottingham Car Recovery on 07865 449983".');
+  pass('Call button accessible name is "Call Nottingham Car Recovery on 07488 813738".');
 }
 
 // Planned transport separation: booking page must not offer "Call Me Back"
@@ -699,7 +699,7 @@ if (bookingHtml.includes('data-form-name="callback"')) {
 let leadPagesTopOk = true;
 for (const f of LEAD_EXPANSION_PAGES) {
   const html = pageHtml[f];
-  if (!/tel:07865449983/.test(html) || !/https:\/\/wa\.me\/447865449983/.test(html)) {
+  if (!/tel:07488813738/.test(html) || !/https:\/\/wa\.me\/447488813738/.test(html)) {
     fail(`${f}: missing visible call/WhatsApp links near the top`);
     leadPagesTopOk = false;
   }
@@ -884,6 +884,75 @@ if (workerSrc.includes('accuracyConfirmed') || workerSrc.includes('noGuaranteeAc
   fail('worker/index.js: retired individual checkbox field names (accuracyConfirmed/noGuaranteeAck/contactConsent) are still referenced');
 } else {
   pass('worker/index.js has no lingering references to the retired individual checkbox fields.');
+}
+
+// ------------------------------------------------------------------
+// Strict legacy phone-number check (business phone migration pass)
+// ------------------------------------------------------------------
+// Scans the whole working project for the retired number. This file
+// (gen/validate.js) is excluded from the scan since it must legitimately
+// contain the legacy patterns as literal strings in order to check for
+// their absence elsewhere — that is not a "live" reference. Binary
+// assets, .git internals and .zip archives are also excluded.
+const PROJECT_ROOT = path.join(__dirname, '..');
+const LEGACY_NUMBER_PATTERNS = [
+  '07865 449983',
+  '07865449983',
+  '447865449983',
+  'wa.me/447865449983',
+  'tel:07865449983'
+];
+const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.ico', '.zip', '.woff', '.woff2', '.ttf']);
+
+function walkProjectFiles(dir) {
+  let results = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === '.git' || entry.name === 'node_modules') continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results = results.concat(walkProjectFiles(full));
+    } else if (!BINARY_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
+const legacyScanFiles = walkProjectFiles(PROJECT_ROOT).filter((f) => f !== path.join(__dirname, 'validate.js'));
+let legacyIssues = [];
+for (const filePath of legacyScanFiles) {
+  let content;
+  try {
+    content = fs.readFileSync(filePath, 'utf8');
+  } catch (e) {
+    continue;
+  }
+  for (const pattern of LEGACY_NUMBER_PATTERNS) {
+    if (content.includes(pattern)) {
+      legacyIssues.push(`${path.relative(PROJECT_ROOT, filePath)} contains legacy pattern "${pattern}"`);
+    }
+  }
+}
+if (legacyIssues.length) {
+  legacyIssues.forEach((m) => fail('Legacy phone number found: ' + m));
+} else {
+  pass(
+    'Strict legacy-number check: zero occurrences of the old number ' +
+      '(07865 449983 / 07865449983 / 447865449983 / wa.me/447865449983 / tel:07865449983) ' +
+      `found anywhere in the ${legacyScanFiles.length} scanned project files.`
+  );
+}
+
+// New number present in the expected source and generated locations
+if (!configSrc.includes('07488 813738') || !configSrc.includes('tel:07488813738') || !configSrc.includes('447488813738')) {
+  fail('config/site-config.js does not contain the new phone/WhatsApp values');
+} else {
+  pass('config/site-config.js contains the new phone/WhatsApp values.');
+}
+if (!homeHtml.includes('tel:07488813738') || !homeHtml.includes('https://wa.me/447488813738')) {
+  fail('index.html does not contain the new tel:/wa.me links');
+} else {
+  pass('index.html contains the new tel:/wa.me links.');
 }
 
 // ---- Report ----

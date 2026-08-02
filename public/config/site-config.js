@@ -23,11 +23,11 @@
     domain: 'https://www.nottingham-car-recovery.co.uk',
 
     // Contact details
-    phoneDisplay: '07865 449983',
-    phoneHref: 'tel:07865449983',
+    phoneDisplay: '07488 813738',
+    phoneHref: 'tel:07488813738',
 
     // Digits only (no +) — used to build the wa.me link below.
-    whatsappNumber: '447865449983',
+    whatsappNumber: '447488813738',
 
     // Intentionally blank — no business email is provided yet.
     businessEmail: '',

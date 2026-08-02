@@ -168,8 +168,8 @@ Open it and fill in:
 
 | Field | Purpose | Current value |
 |---|---|---|
-| `phoneDisplay` / `phoneHref` | Phone number shown/dialled | `'07865 449983'` / `'tel:07865449983'` — **live** |
-| `whatsappNumber` | WhatsApp click-to-chat number | `'447865449983'` — **live** (`https://wa.me/447865449983`) |
+| `phoneDisplay` / `phoneHref` | Phone number shown/dialled | `'07488 813738'` / `'tel:07488813738'` — **live** |
+| `whatsappNumber` | WhatsApp click-to-chat number | `'447488813738'` — **live** (`https://wa.me/447488813738`) |
 | `businessEmail` | Contact email | `''` — **intentionally blank, no email is offered** |
 | `serviceHours` / `isTwentyFourSeven` | Hours shown site-wide | `'24 hours a day, 7 days a week'` / `true` |
 | `googleAnalyticsId` | GA4 measurement ID — leave blank to keep GA4 off | `''` (placeholder) |
@@ -185,8 +185,8 @@ hours directly into every generated page — nothing is hard-coded per page.
 self-healing fallback for anyone browsing without JavaScript having run
 the rebuild step, and for any field that is later blanked again.
 
-**Phone and WhatsApp are currently live** and point to `07865 449983` /
-`https://wa.me/447865449983` on every page, including the sticky mobile
+**Phone and WhatsApp are currently live** and point to `07488 813738` /
+`https://wa.me/447488813738` on every page, including the sticky mobile
 bar. **No business email is provided.** `businessEmail` is deliberately
 left as `''`, not a placeholder string — while it is blank, no Email
 button, mailto link or email address is rendered anywhere on the site;
@@ -453,7 +453,7 @@ that these determinations are made properly, not by website copy.
 ## 12. Launch Checklist
 
 - [x] Phone, WhatsApp and hours are set in `public/config/site-config.js`
-      (`07865 449983` / `https://wa.me/447865449983` / 24/7). No business
+      (`07488 813738` / `https://wa.me/447488813738` / 24/7). No business
       email is provided — that stays intentionally blank.
 - [ ] Regenerate pages if you edited anything under `gen/`: `node gen/build.js`
 - [ ] Set `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` via `wrangler secret put`
