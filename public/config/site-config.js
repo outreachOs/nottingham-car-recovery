@@ -20,7 +20,7 @@
   var SITE_CONFIG = {
     // Core business identity
     businessName: 'Nottingham Car Recovery',
-    domain: 'https://www.nottingham-car-recovery.co.uk',
+    domain: 'https://nottingham-car-recovery.co.uk',
 
     // Contact details
     phoneDisplay: '07488 813738',

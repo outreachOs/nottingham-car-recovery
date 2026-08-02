@@ -141,7 +141,7 @@ route.
 2. Authenticate: `wrangler login`
 3. Review `wrangler.toml` — the `[assets]` block points at `./public`.
 4. Deploy: `wrangler deploy` (run from `production-site/`)
-5. Attach the custom domain `www.nottingham-car-recovery.co.uk` in the
+5. Attach the custom domain `nottingham-car-recovery.co.uk` in the
    Cloudflare dashboard (Workers & Pages → your worker → Triggers → Custom Domains).
 
 ### Worker secrets
@@ -314,7 +314,7 @@ anywhere in `href` attributes, canonicals, or `og:url`).
 - `public/robots.txt` allows all crawling and references the sitemap.
 
 **After deploying:**
-1. **Google Search Console** — add the `www.nottingham-car-recovery.co.uk`
+1. **Google Search Console** — add the `nottingham-car-recovery.co.uk`
    property, verify using the HTML-tag method (paste the verification
    value into `googleSiteVerification` in `site-config.js`, which is
    injected as a `<meta name="google-site-verification">` tag — see note

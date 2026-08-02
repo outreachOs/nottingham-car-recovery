@@ -79,7 +79,7 @@ for (const f of REQUIRED_PAGES) {
   if (!ogUrl) fail(`${f}: missing og:url`);
   if (canonical && canonical.includes('.html')) fail(`${f}: canonical contains .html (${canonical})`);
   if (canonical && ogUrl && canonical !== ogUrl) fail(`${f}: canonical (${canonical}) != og:url (${ogUrl})`);
-  if (!canonical || !canonical.startsWith('https://www.nottingham-car-recovery.co.uk')) {
+  if (!canonical || !canonical.startsWith('https://nottingham-car-recovery.co.uk')) {
     fail(`${f}: canonical does not use production domain (${canonical})`);
   }
 }
@@ -124,7 +124,7 @@ if (uniqueLocs.size !== locs.length) fail('sitemap.xml has duplicate URLs');
 else pass('sitemap.xml has no duplicate URLs.');
 if (locs.length !== REQUIRED_PAGES.length) fail(`sitemap.xml has ${locs.length} URLs, expected ${REQUIRED_PAGES.length}`);
 else pass(`sitemap.xml URL count matches page count (${REQUIRED_PAGES.length}).`);
-const sitemapCleanPaths = new Set(locs.map((l) => l.replace('https://www.nottingham-car-recovery.co.uk', '') || '/'));
+const sitemapCleanPaths = new Set(locs.map((l) => l.replace('https://nottingham-car-recovery.co.uk', '') || '/'));
 for (const p of sitemapPaths) {
   if (!sitemapCleanPaths.has(p)) fail(`sitemap.xml missing path ${p}`);
 }
@@ -133,7 +133,7 @@ if (locs.some((l) => l.includes('/notify'))) fail('sitemap.xml contains /notify'
 
 // 10. robots.txt sitemap correct
 const robots = fs.readFileSync(path.join(PUBLIC_DIR, 'robots.txt'), 'utf8');
-if (!robots.includes('Sitemap: https://www.nottingham-car-recovery.co.uk/sitemap.xml')) {
+if (!robots.includes('Sitemap: https://nottingham-car-recovery.co.uk/sitemap.xml')) {
   fail('robots.txt sitemap reference is missing or incorrect');
 } else pass('robots.txt references the correct sitemap URL.');
 
@@ -953,6 +953,62 @@ if (!homeHtml.includes('tel:07488813738') || !homeHtml.includes('https://wa.me/4
   fail('index.html does not contain the new tel:/wa.me links');
 } else {
   pass('index.html contains the new tel:/wa.me links.');
+}
+
+// ------------------------------------------------------------------
+// Strict legacy-domain check (canonical hostname migration pass)
+// ------------------------------------------------------------------
+// Same exclusion rules as the phone-number scan above: this file is
+// excluded because it must legitimately contain the retired hostname
+// as a literal string in order to check for its absence elsewhere.
+const LEGACY_DOMAIN = 'https://www.nottingham-car-recovery.co.uk';
+const legacyDomainIssues = [];
+for (const filePath of legacyScanFiles) {
+  let content;
+  try {
+    content = fs.readFileSync(filePath, 'utf8');
+  } catch (e) {
+    continue;
+  }
+  if (content.includes(LEGACY_DOMAIN)) {
+    legacyDomainIssues.push(`${path.relative(PROJECT_ROOT, filePath)} contains the retired www hostname`);
+  }
+}
+if (legacyDomainIssues.length) {
+  legacyDomainIssues.forEach((m) => fail('Legacy domain found: ' + m));
+} else {
+  pass(
+    `Strict legacy-domain check: zero occurrences of "${LEGACY_DOMAIN}" ` +
+      `found anywhere in the ${legacyScanFiles.length} scanned project files.`
+  );
+}
+
+// New root domain present in canonical, og:url, sitemap, robots.txt and JSON-LD
+const NEW_DOMAIN = 'https://nottingham-car-recovery.co.uk';
+if (!homeHtml.includes(`<link rel="canonical" href="${NEW_DOMAIN}/">`)) {
+  fail('index.html canonical does not use the new root domain');
+} else {
+  pass('index.html canonical uses the new root domain.');
+}
+if (!homeHtml.includes(`<meta property="og:url" content="${NEW_DOMAIN}/">`)) {
+  fail('index.html og:url does not use the new root domain');
+} else {
+  pass('index.html og:url uses the new root domain.');
+}
+if (!homeHtml.includes(`"url":"${NEW_DOMAIN}"`) && !homeHtml.includes(`"@id":"${NEW_DOMAIN}/#organization"`)) {
+  fail('index.html JSON-LD does not reference the new root domain');
+} else {
+  pass('index.html JSON-LD (Organization/WebSite) references the new root domain.');
+}
+if (!robots.includes(`Sitemap: ${NEW_DOMAIN}/sitemap.xml`)) {
+  fail('robots.txt does not reference the new root domain sitemap');
+} else {
+  pass('robots.txt references the new root domain sitemap.');
+}
+if (!sitemap.includes(`<loc>${NEW_DOMAIN}/</loc>`)) {
+  fail('sitemap.xml does not contain the new root domain homepage URL');
+} else {
+  pass('sitemap.xml contains the new root domain homepage URL.');
 }
 
 // ---- Report ----

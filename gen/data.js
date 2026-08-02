@@ -1,6 +1,6 @@
 'use strict';
 
-const DOMAIN = 'https://www.nottingham-car-recovery.co.uk';
+const DOMAIN = 'https://nottingham-car-recovery.co.uk';
 
 const SERVICES = [
   {
