@@ -82,12 +82,18 @@
       var formName = (event.detail && event.detail.form) || 'enquiry';
       var eventMap = {
         callback: 'callback_submit',
-        planned_transport: 'planned_transport_submit'
+        planned_transport: 'planned_transport_submit',
+        operator_interest: 'operator_interest_submit'
       };
       trackEvent(eventMap[formName] || 'form_submit', {
         form_name: formName
       });
-      trackEvent('generate_lead', { form_name: formName });
+      // generate_lead is a customer-lead signal — operator/driver
+      // expressions of interest are a different kind of submission and
+      // are intentionally excluded from this event.
+      if (formName !== 'operator_interest') {
+        trackEvent('generate_lead', { form_name: formName });
+      }
     });
   }
 

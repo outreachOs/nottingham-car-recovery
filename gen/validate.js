@@ -16,7 +16,16 @@ const REQUIRED_PAGES = [
   'car-recovery-west-bridgford.html','car-recovery-beeston.html','car-recovery-arnold.html',
   'car-recovery-hucknall.html','car-recovery-carlton-gedling.html','car-recovery-bulwell.html',
   'car-recovery-clifton.html','car-recovery-long-eaton.html','about.html','booking.html','contact.html',
-  'privacy.html','terms.html'
+  'privacy.html','terms.html',
+  // Phase 1 organic lead-expansion cluster (6 new pages)
+  'recovery-without-breakdown-cover-nottingham.html','car-wont-start-recovery-nottingham.html',
+  'car-recovery-from-home-nottingham.html','long-distance-car-transport-nottingham.html',
+  'garage-vehicle-collection-delivery-nottingham.html','recovery-driver-work-nottingham.html'
+];
+
+const LEAD_EXPANSION_PAGES = [
+  'recovery-without-breakdown-cover-nottingham.html','car-wont-start-recovery-nottingham.html',
+  'car-recovery-from-home-nottingham.html','garage-vehicle-collection-delivery-nottingham.html'
 ];
 
 let issues = [];
@@ -25,10 +34,10 @@ let passes = [];
 function fail(msg) { issues.push(msg); }
 function pass(msg) { passes.push(msg); }
 
-// 1. All 22 HTML files exist
+// 1. All 28 HTML files exist
 const missing = REQUIRED_PAGES.filter((f) => !fs.existsSync(path.join(PUBLIC_DIR, f)));
 if (missing.length) fail('Missing pages: ' + missing.join(', '));
-else pass('All 22 required HTML files exist.');
+else pass(`All ${REQUIRED_PAGES.length} required HTML files exist (22 original + 6 Phase 1 expansion pages).`);
 
 const pageHtml = {};
 for (const f of REQUIRED_PAGES) {
@@ -114,7 +123,7 @@ const uniqueLocs = new Set(locs);
 if (uniqueLocs.size !== locs.length) fail('sitemap.xml has duplicate URLs');
 else pass('sitemap.xml has no duplicate URLs.');
 if (locs.length !== REQUIRED_PAGES.length) fail(`sitemap.xml has ${locs.length} URLs, expected ${REQUIRED_PAGES.length}`);
-else pass('sitemap.xml URL count matches page count (22).');
+else pass(`sitemap.xml URL count matches page count (${REQUIRED_PAGES.length}).`);
 const sitemapCleanPaths = new Set(locs.map((l) => l.replace('https://www.nottingham-car-recovery.co.uk', '') || '/'));
 for (const p of sitemapPaths) {
   if (!sitemapCleanPaths.has(p)) fail(`sitemap.xml missing path ${p}`);
@@ -387,7 +396,9 @@ const CALLBACK_FORM_PAGES = [
   'van-commercial-recovery-nottingham.html', 'auction-non-runner-collection-nottingham.html',
   'car-recovery-west-bridgford.html', 'car-recovery-beeston.html', 'car-recovery-arnold.html',
   'car-recovery-hucknall.html', 'car-recovery-carlton-gedling.html', 'car-recovery-bulwell.html',
-  'car-recovery-clifton.html', 'car-recovery-long-eaton.html'
+  'car-recovery-clifton.html', 'car-recovery-long-eaton.html',
+  'recovery-without-breakdown-cover-nottingham.html', 'car-wont-start-recovery-nottingham.html',
+  'car-recovery-from-home-nottingham.html', 'garage-vehicle-collection-delivery-nottingham.html'
 ];
 
 let callbackFieldsOk = true;
@@ -427,8 +438,8 @@ for (const f of CALLBACK_FORM_PAGES) {
     fail(`${f}: callback form includes a checkbox (consent checkbox must not be present)`);
     callbackFieldsOk = false;
   }
-  if (!formHtml.includes('Request My Callback')) {
-    fail(`${f}: callback form submit button is not "Request My Callback"`);
+  if (!formHtml.includes('Call Me Back')) {
+    fail(`${f}: callback form submit button is not "Call Me Back"`);
     callbackFieldsOk = false;
   }
   if (!formHtml.includes('id="honeypot"') || !formHtml.includes('name="honeypot"')) {
@@ -472,23 +483,31 @@ if (!bookingHtml.includes('Submitting this form is a request only.')) {
 } else {
   pass('booking.html includes the required "request only" legal notice.');
 }
-if (!bookingHtml.includes('Request Planned Transport<')) {
-  fail('booking.html: submit button is not "Request Planned Transport"');
+if (!bookingHtml.includes('Send Transport Details<')) {
+  fail('booking.html: submit button is not "Send Transport Details"');
 } else {
-  pass('booking.html submit button is "Request Planned Transport".');
+  pass('booking.html submit button is "Send Transport Details".');
 }
-if (!/Broken down or need recovery now/.test(bookingHtml) || !/tel:07865449983/.test(bookingHtml)) {
-  fail('booking.html: missing the urgent-recovery notice with a working call link');
+// Scope this to <main> only — the shared sitewide header/mobile-menu
+// legitimately says "Call Me Back" on every page, including this one.
+const bookingMain = (bookingHtml.match(/<main[^>]*>[\s\S]*?<\/main>/) || [bookingHtml])[0];
+if (bookingMain.includes('Call Me Back')) {
+  fail('booking.html: "Call Me Back" wording must not be used within the planned transport page content');
 } else {
-  pass('booking.html has the urgent-recovery notice with a working tel: link.');
+  pass('booking.html page content does not use "Call Me Back" wording (planned transport stays a separate journey).');
+}
+if (!/Need recovery now\?/.test(bookingHtml) || !/tel:07865449983/.test(bookingHtml) || !/https:\/\/wa\.me\/447865449983/.test(bookingHtml)) {
+  fail('booking.html: missing the urgent-recovery notice with working call/WhatsApp links');
+} else {
+  pass('booking.html has the urgent-recovery notice with working call and WhatsApp links.');
 }
 
 // Homepage hero: phone visible, 24/7 line, call-now instruction
 const homeHtml = pageHtml['index.html'];
-if (!/Available 24 hours a day, 7 days a week\./.test(homeHtml)) {
-  fail('index.html: hero is missing "Available 24 hours a day, 7 days a week."');
+if (!/Available 24\/7\./.test(homeHtml)) {
+  fail('index.html: hero is missing "Available 24/7."');
 } else {
-  pass('Homepage hero includes "Available 24 hours a day, 7 days a week."');
+  pass('Homepage hero includes "Available 24/7."');
 }
 if (!/Call now and tell us where you are/.test(homeHtml)) {
   fail('index.html: hero is missing the "Call now and tell us..." instruction line');
@@ -524,6 +543,347 @@ if (/\bHGV\b/i.test(pageHtml['van-commercial-recovery-nottingham.html'].replace(
   if (/\bHGV\b/i.test(bodyOnly)) {
     fail('van-commercial-recovery-nottingham.html: "HGV" wording still present in visible body copy');
   }
+}
+
+// ------------------------------------------------------------------
+// Final copy / customer-journey pass checks
+// ------------------------------------------------------------------
+
+// Retired urgent-CTA wording must not appear anywhere (except as prose
+// inside unrelated headings like "Advance Booking" on service pages,
+// which is legitimate body copy, not a CTA — checked separately below).
+const RETIRED_URGENT_CTA_STRINGS = [
+  'Request a Callback',
+  'Request My Callback',
+  'Request Planned Transport<',
+  '>Get Help<',
+  'Call for Recovery',
+  'Call for Vehicle Recovery'
+];
+let retiredOk = true;
+for (const f of REQUIRED_PAGES.concat(['404.html'])) {
+  const html = pageHtml[f] || fs.readFileSync(path.join(PUBLIC_DIR, f), 'utf8');
+  for (const term of RETIRED_URGENT_CTA_STRINGS) {
+    if (html.includes(term)) {
+      fail(`${f}: retired urgent CTA wording "${term}" still present`);
+      retiredOk = false;
+    }
+  }
+}
+if (retiredOk) pass('No retired urgent CTA wording (Request a Callback / Request My Callback / Request Planned Transport / Call for Recovery etc.) found anywhere.');
+
+// "Call Me Back" used consistently for the urgent callback CTA
+let callMeBackOk = true;
+for (const f of CALLBACK_FORM_PAGES) {
+  if (!pageHtml[f].includes('Call Me Back')) {
+    fail(`${f}: does not contain "Call Me Back" wording`);
+    callMeBackOk = false;
+  }
+}
+if (callMeBackOk) pass('"Call Me Back" wording is present consistently across the hero, callback CTAs and forms on every callback-form page.');
+
+// Callback form exact copy
+const homeCallbackSection = homeHtml.match(/<section id="callback"[\s\S]*?<\/section>/);
+if (!homeCallbackSection || !homeCallbackSection[0].includes('Want Us to Call You?') || !homeCallbackSection[0].includes('Enter your name and number.')) {
+  fail('index.html: callback section heading/copy does not match "Want Us to Call You?" / "Enter your name and number."');
+} else {
+  pass('Callback section heading and copy match spec ("Want Us to Call You?" / "Enter your name and number.").');
+}
+if (!homeCallbackSection || !homeCallbackSection[0].includes("We'll only use your details to call you about recovery.")) {
+  fail('index.html: callback section is missing the required privacy note');
+} else {
+  pass('Callback section privacy note matches spec exactly.');
+}
+
+// Homepage section order: hero, trust-strip, callback, services
+const homeSectionOrder = [...homeHtml.matchAll(/id="(hero|callback|services)"|class="hero"|class="trust-strip"/g)];
+const heroIdx = homeHtml.indexOf('class="hero"');
+const trustIdx = homeHtml.indexOf('class="trust-strip"');
+const callbackIdx = homeHtml.indexOf('id="callback"');
+const servicesIdx = homeHtml.indexOf('id="services"');
+if (heroIdx > -1 && trustIdx > -1 && callbackIdx > -1 && servicesIdx > -1 && heroIdx < trustIdx && trustIdx < callbackIdx && callbackIdx < servicesIdx) {
+  pass('Homepage section order is Hero -> Trust strip -> Callback -> Services, as required.');
+} else {
+  fail(`Homepage section order is incorrect (hero=${heroIdx}, trust=${trustIdx}, callback=${callbackIdx}, services=${servicesIdx})`);
+}
+
+// WhatsApp label simplified to "WhatsApp" (not "WhatsApp Us") in CTA button groups
+if (/>WhatsApp Us</.test(homeHtml)) {
+  fail('index.html: found "WhatsApp Us" — CTA button label should be simplified to "WhatsApp"');
+} else {
+  pass('WhatsApp CTA buttons use the simplified "WhatsApp" label (not "WhatsApp Us").');
+}
+
+// Footer: single "View Recovery Areas" link, no per-location list, WhatsApp present
+const footerAreasMatch = homeHtml.match(/<h3>Areas<\/h3>\s*<ul>([\s\S]*?)<\/ul>/);
+if (!footerAreasMatch || !footerAreasMatch[1].includes('View Recovery Areas') || (footerAreasMatch[1].match(/<li>/g) || []).length !== 1) {
+  fail('index.html: footer Areas column is not simplified to a single "View Recovery Areas" link');
+} else {
+  pass('Footer Areas column is simplified to a single "View Recovery Areas" link.');
+}
+if (!homeHtml.includes('footer-contact') || !/WhatsApp:\s*<a[^>]*wa\.me/.test(homeHtml)) {
+  fail('index.html: footer is missing a WhatsApp contact link');
+} else {
+  pass('Footer includes a WhatsApp contact link.');
+}
+
+// Booking/Plan Transport navigation label renamed consistently, URL unchanged
+if (!homeHtml.includes('<a href="/booking">Plan Transport</a>')) {
+  fail('index.html: footer "Plan Transport" link (pointing to /booking) not found with the renamed label');
+} else {
+  pass('Footer navigation label renamed to "Plan Transport", linking to the unchanged /booking URL.');
+}
+if (!bookingHtml.includes('>Plan Transport<') /* breadcrumb */) {
+  fail('booking.html: breadcrumb label was not renamed to "Plan Transport"');
+} else {
+  pass('booking.html breadcrumb label renamed to "Plan Transport".');
+}
+
+// Telegram message header text
+if (!workerSrc.includes('CALL ME BACK LEAD')) {
+  fail('worker/index.js: callback Telegram message header is not "CALL ME BACK LEAD"');
+} else {
+  pass('worker/index.js callback Telegram message header is "CALL ME BACK LEAD".');
+}
+if (workerSrc.includes('NEW CALLBACK LEAD')) {
+  fail('worker/index.js: retired "NEW CALLBACK LEAD" header text still present');
+}
+if (!workerSrc.includes('NEW PLANNED TRANSPORT REQUEST')) {
+  fail('worker/index.js: planned transport Telegram header text must remain unchanged');
+} else {
+  pass('worker/index.js planned transport Telegram message format is unchanged.');
+}
+
+// Form success/error copy
+const formsSrc = fs.readFileSync(path.join(PUBLIC_DIR, 'assets', 'js', 'forms.js'), 'utf8');
+if (!formsSrc.includes('Got it.') || !formsSrc.includes("We'll call you on the number provided.")) {
+  fail('forms.js: callback success message does not match "Got it." / "We\'ll call you on the number provided."');
+} else {
+  pass('forms.js callback success message matches spec ("Got it." / "We\'ll call you on the number provided.").');
+}
+if (!formsSrc.includes("Couldn't send it.")) {
+  fail('forms.js: callback error message does not match "Couldn\'t send it."');
+} else {
+  pass('forms.js callback error message matches spec ("Couldn\'t send it.").');
+}
+if (/\d{1,2}(:\d{2})?\s*(am|pm|minutes|hours)\b/i.test(formsSrc.match(/Got it[\s\S]{0,200}/)?.[0] || '')) {
+  fail('forms.js: callback success message appears to promise a specific callback time');
+} else {
+  pass('forms.js callback success message does not promise an exact callback time.');
+}
+
+// Sticky bar accessible name includes business name + number
+if (!homeHtml.includes('aria-label="Call Nottingham Car Recovery on 07865 449983"')) {
+  fail('index.html: sticky/desktop call button is missing the required accessible name "Call Nottingham Car Recovery on 07865 449983"');
+} else {
+  pass('Call button accessible name is "Call Nottingham Car Recovery on 07865 449983".');
+}
+
+// Planned transport separation: booking page must not offer "Call Me Back"
+// as its form action, and the callback-form pages must not offer planned
+// transport fields (already covered by the "forbidden field names" check).
+if (bookingHtml.includes('data-form-name="callback"')) {
+  fail('booking.html: unexpectedly contains a callback-type form');
+} else {
+  pass('booking.html contains only the planned_transport form, not the callback form.');
+}
+
+// ------------------------------------------------------------------
+// Phase 1 organic lead-expansion cluster + operator network checks
+// ------------------------------------------------------------------
+
+// The 4 urgent lead-expansion pages already got their callback-form
+// checks via CALLBACK_FORM_PAGES above. Confirm each also shows the
+// phone number, 24/7 availability and both Call/WhatsApp buttons near
+// the top (via the shared Need Recovery band + hero).
+let leadPagesTopOk = true;
+for (const f of LEAD_EXPANSION_PAGES) {
+  const html = pageHtml[f];
+  if (!/tel:07865449983/.test(html) || !/https:\/\/wa\.me\/447865449983/.test(html)) {
+    fail(`${f}: missing visible call/WhatsApp links near the top`);
+    leadPagesTopOk = false;
+  }
+  if (!/24\/7|24 hours a day/i.test(html)) {
+    fail(`${f}: missing 24/7 availability wording`);
+    leadPagesTopOk = false;
+  }
+}
+if (leadPagesTopOk) pass('All 4 urgent lead-expansion pages show phone, WhatsApp and 24/7 availability near the top.');
+
+// Long-distance page: planned-transport hierarchy, not urgent
+const longDistanceHtml = pageHtml['long-distance-car-transport-nottingham.html'];
+if (!longDistanceHtml) {
+  fail('long-distance-car-transport-nottingham.html not found');
+} else {
+  // Scoped to <main> — the shared sitewide header/mobile-menu
+  // legitimately says "Call Me Back" on every page, including this one.
+  const longDistanceMain = (longDistanceHtml.match(/<main[^>]*>[\s\S]*?<\/main>/) || [longDistanceHtml])[0];
+  if (longDistanceMain.includes('Call Me Back')) {
+    fail('long-distance-car-transport-nottingham.html: must not use "Call Me Back" within the page content — this is a planned-transport page');
+  } else {
+    pass('long-distance-car-transport-nottingham.html page content does not use "Call Me Back" wording.');
+  }
+  if (!longDistanceHtml.includes('>Plan Transport<') || !/href="\/booking"[^>]*>[\s\S]{0,80}Plan Transport/.test(longDistanceHtml)) {
+    fail('long-distance-car-transport-nottingham.html: missing a "Plan Transport" action linking to /booking');
+  } else {
+    pass('long-distance-car-transport-nottingham.html has a "Plan Transport" action linking to /booking.');
+  }
+  if (longDistanceHtml.includes('id="callback"')) {
+    fail('long-distance-car-transport-nottingham.html: must not embed the two-field callback form');
+  } else {
+    pass('long-distance-car-transport-nottingham.html does not embed the two-field callback form.');
+  }
+}
+
+// Operator page: separation from the customer journey
+const operatorHtml = pageHtml['recovery-driver-work-nottingham.html'];
+if (!operatorHtml) {
+  fail('recovery-driver-work-nottingham.html not found');
+} else {
+  const operatorMain = (operatorHtml.match(/<main[^>]*>[\s\S]*?<\/main>/) || [operatorHtml])[0];
+  if (/data-cta="call"|data-cta="whatsapp"|Call Me Back/.test(operatorMain)) {
+    fail('recovery-driver-work-nottingham.html: page content must not include Call/WhatsApp/Call Me Back actions (must stay separate from the customer journey)');
+  } else {
+    pass('Operator page content has no Call/WhatsApp/Call Me Back actions — kept separate from the customer journey.');
+  }
+  if (!operatorHtml.includes('data-form-name="operator_interest"')) {
+    fail('recovery-driver-work-nottingham.html: operator_interest form not found');
+  } else {
+    pass('Operator page includes the operator_interest form.');
+  }
+  const opFieldNames = ['name', 'phone', 'email', 'basePostcode', 'areasCovered', 'ownVehicle', 'experience'];
+  const opNotRequired = opFieldNames.filter((n) => {
+    const inputMatch = operatorHtml.match(new RegExp(`<(?:input|select|textarea)[^>]*name="${n}"[^>]*>`));
+    return !inputMatch || !/required/.test(inputMatch[0]);
+  });
+  if (opNotRequired.length) {
+    fail(`recovery-driver-work-nottingham.html: expected required operator fields not marked required: ${opNotRequired.join(', ')}`);
+  } else {
+    pass('Operator form required fields (name, phone, email, basePostcode, areasCovered, ownVehicle, experience) are all marked required.');
+  }
+  const opOptionalFieldNames = ['business', 'vehicleType', 'workingStatus'];
+  const opWronglyRequired = opOptionalFieldNames.filter((n) => {
+    const inputMatch = operatorHtml.match(new RegExp(`<(?:input|select|textarea)[^>]*name="${n}"[^>]*>`));
+    return inputMatch && /required/.test(inputMatch[0]);
+  });
+  if (opWronglyRequired.length) {
+    fail(`recovery-driver-work-nottingham.html: fields expected to be optional are marked required: ${opWronglyRequired.join(', ')}`);
+  } else {
+    pass('Operator form optional fields (business, vehicleType, workingStatus) are correctly not required.');
+  }
+  const opCheckboxCount = (operatorHtml.match(/type="checkbox"/g) || []).length;
+  const opHasAckCheckbox = /type="checkbox"[^>]*name="operatorAcknowledgement"|name="operatorAcknowledgement"[^>]*type="checkbox"/.test(operatorHtml);
+  if (opCheckboxCount !== 1 || !opHasAckCheckbox) {
+    fail(`recovery-driver-work-nottingham.html: expected exactly one checkbox named "operatorAcknowledgement", found ${opCheckboxCount} checkbox(es), acknowledgement present: ${opHasAckCheckbox}`);
+  } else {
+    pass('Operator form has exactly one consolidated required checkbox ("operatorAcknowledgement").');
+  }
+  if (operatorHtml.includes('name="accuracyConfirmed"') || operatorHtml.includes('name="noGuaranteeAck"') || operatorHtml.includes('name="contactConsent"')) {
+    fail('recovery-driver-work-nottingham.html: retired individual checkbox fields (accuracyConfirmed/noGuaranteeAck/contactConsent) are still present');
+  } else {
+    pass('Retired individual operator checkbox fields are fully removed.');
+  }
+  if (!operatorHtml.includes('Register My Interest')) {
+    fail('recovery-driver-work-nottingham.html: submit button is not "Register My Interest"');
+  } else {
+    pass('Operator form submit button is "Register My Interest".');
+  }
+  // Document-upload fields must not exist on the initial form.
+  if (/type="file"/.test(operatorHtml)) {
+    fail('recovery-driver-work-nottingham.html: contains a file upload field — documents must not be collected at this stage');
+  } else {
+    pass('Operator form has no file-upload fields.');
+  }
+  // No JobPosting schema, ever.
+  if (operatorHtml.includes('"@type":"JobPosting"')) {
+    fail('recovery-driver-work-nottingham.html: JobPosting schema must not be used');
+  } else {
+    pass('Operator page does not use JobPosting schema.');
+  }
+}
+
+// No JobPosting schema anywhere in the project
+let noJobPostingAnywhere = true;
+for (const f of REQUIRED_PAGES) {
+  if (pageHtml[f].includes('"@type":"JobPosting"')) {
+    fail(`${f}: JobPosting schema must not be used anywhere on this site`);
+    noJobPostingAnywhere = false;
+  }
+}
+if (noJobPostingAnywhere) pass('No JobPosting schema found anywhere on the site.');
+
+// No salary/income/guarantee wording anywhere (spirit check, sitewide)
+const OPERATOR_FORBIDDEN_TERMS = [
+  'salary', 'day rate', 'minimum income', 'guaranteed leads', 'guaranteed jobs',
+  'constant work', 'employment benefits', 'paid training', 'police work', 'insurer work'
+];
+let operatorWordingOk = true;
+for (const f of REQUIRED_PAGES) {
+  const lower = pageHtml[f].toLowerCase();
+  for (const term of OPERATOR_FORBIDDEN_TERMS) {
+    if (lower.includes(term)) {
+      fail(`${f}: contains forbidden operator-recruitment wording "${term}"`);
+      operatorWordingOk = false;
+    }
+  }
+}
+if (operatorWordingOk) pass('No salary, day-rate, guaranteed-work or similar forbidden recruitment wording found anywhere.');
+
+// Footer + About page link to the operator page
+if (!homeHtml.includes('<a href="/recovery-driver-work-nottingham">Recovery Operator Network</a>')) {
+  fail('index.html: footer is missing the "Recovery Operator Network" link');
+} else {
+  pass('Footer includes the "Recovery Operator Network" link.');
+}
+if (!pageHtml['about.html'].includes('/recovery-driver-work-nottingham')) {
+  fail('about.html: missing a contextual link to the operator network page');
+} else {
+  pass('About page includes a contextual link to the operator network page.');
+}
+// Must not sit beside the urgent Call/WhatsApp/Call Me Back row — check
+// it is not inside the same .btn-row as those actions anywhere.
+const btnRowsWithOperatorLink = [...homeHtml.matchAll(/<div class="btn-row[^"]*">[\s\S]*?<\/div>/g)].filter((m) =>
+  m[0].includes('recovery-driver-work-nottingham')
+);
+if (btnRowsWithOperatorLink.length) {
+  fail('index.html: operator network link must not appear inside a Call/WhatsApp/Call Me Back button row');
+} else {
+  pass('Operator network link does not appear beside Call/WhatsApp/Call Me Back actions.');
+}
+
+// Privacy page covers operator applications
+if (!pageHtml['privacy.html'].includes('Recovery Operator Network Applications')) {
+  fail('privacy.html: missing the "Recovery Operator Network Applications" section');
+} else {
+  pass('Privacy page includes an operator-network applications section.');
+}
+
+// Operator Telegram message is distinct from the other two formats
+if (!workerSrc.includes('NEW RECOVERY OPERATOR INTEREST')) {
+  fail('worker/index.js: operator Telegram message header "NEW RECOVERY OPERATOR INTEREST" not found');
+} else {
+  pass('worker/index.js operator Telegram message header is "NEW RECOVERY OPERATOR INTEREST".');
+}
+const telegramHeaders = ['CALL ME BACK LEAD', 'NEW PLANNED TRANSPORT REQUEST', 'NEW RECOVERY OPERATOR INTEREST'];
+const uniqueHeaders = new Set(telegramHeaders.filter((h) => workerSrc.includes(h)));
+if (uniqueHeaders.size !== 3) {
+  fail('worker/index.js: the three Telegram message headers are not all present and distinct');
+} else {
+  pass('All three Telegram message formats (callback, planned transport, operator) are present and distinct.');
+}
+
+// Operator server-side validation matches the form (required fields)
+const operatorValidationFields = ['clean.email', 'clean.basePostcode', 'clean.areasCovered', 'clean.ownVehicle', 'clean.experience', 'clean.operatorAcknowledgement'];
+const missingOperatorValidation = operatorValidationFields.filter((f2) => !workerSrc.includes(f2));
+if (missingOperatorValidation.length) {
+  fail(`worker/index.js: operator form validation appears incomplete, missing checks for: ${missingOperatorValidation.join(', ')}`);
+} else {
+  pass('worker/index.js validates all required operator_interest fields (including the consolidated acknowledgement checkbox).');
+}
+if (workerSrc.includes('accuracyConfirmed') || workerSrc.includes('noGuaranteeAck') || workerSrc.includes('contactConsent')) {
+  fail('worker/index.js: retired individual checkbox field names (accuracyConfirmed/noGuaranteeAck/contactConsent) are still referenced');
+} else {
+  pass('worker/index.js has no lingering references to the retired individual checkbox fields.');
 }
 
 // ---- Report ----

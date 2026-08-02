@@ -43,6 +43,8 @@ function build() {
 
         <h2>Nottingham-Area Coverage</h2>
         <p>Coverage spans Nottingham and the surrounding towns listed on our <a href="/areas">areas page</a>, along with key routes including the M1, A52, A453, A60, A610 and A612.</p>
+
+        <p style="margin-top:2rem;font-size:0.875rem;color:var(--muted-foreground);">Independent recovery operator or experienced recovery driver? Visit our <a href="/recovery-driver-work-nottingham">recovery operator network page</a> to register your interest in suitable opportunities.</p>
       </div>
       <aside class="aside-card">
         <h3>Get in touch</h3>
@@ -56,7 +58,7 @@ function build() {
     </div>
   </div>
 </section>
-${C.renderFinalCta({ heading: 'Ready to Get Started?', callbackHref: '/contact#callback' })}`;
+${C.renderFinalCta({ callbackHref: '/contact#callback' })}`;
 
   return {
     path: '/about',

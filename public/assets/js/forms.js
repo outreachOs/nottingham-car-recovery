@@ -195,7 +195,7 @@
               showBanner(
                 form,
                 'success',
-                "Callback request received. We'll use the number provided to contact you about your recovery enquiry. Need to speak now? Call " +
+                "<strong>Got it.</strong> We'll call you on the number provided. Need help now? Call " +
                   phoneLinkHtml() +
                   '.',
                 true
@@ -212,7 +212,7 @@
               new CustomEvent('ncr:form-success', { detail: { form: formNameOf(form) } })
             );
           } else if (isCallback) {
-            showBanner(form, 'error', 'We could not send your callback request. Please call ' + phoneLinkHtml() + '.', true);
+            showBanner(form, 'error', "<strong>Couldn't send it.</strong> Please call " + phoneLinkHtml() + ' instead.', true);
           } else {
             showBanner(
               form,
@@ -225,7 +225,7 @@
         .catch(function () {
           setSubmitting(form, false);
           if (isCallback) {
-            showBanner(form, 'error', 'We could not send your callback request. Please call ' + phoneLinkHtml() + '.', true);
+            showBanner(form, 'error', "<strong>Couldn't send it.</strong> Please call " + phoneLinkHtml() + ' instead.', true);
           } else {
             showBanner(
               form,

@@ -7,8 +7,8 @@ Cloudflare Worker for form handling.
 
 No Next.js, React, Tailwind, shadcn or Vercel code is included in the
 deployed output. A small Node.js **build-time generator** (`gen/`) is used
-during development to keep 22 pages consistent — it is not required at
-runtime and is not deployed.
+during development to keep all 28 pages consistent — it is not required
+at runtime and is not deployed.
 
 ---
 
@@ -17,7 +17,7 @@ runtime and is not deployed.
 ```
 production-site/
 ├── public/                        ← deployed as Cloudflare Assets (site root)
-│   ├── index.html                 ← homepage + 21 other clean-URL pages
+│   ├── index.html                 ← homepage + 27 other clean-URL pages (28 total)
 │   ├── services.html
 │   ├── breakdown-recovery-nottingham.html
 │   ├── accident-recovery-nottingham.html
@@ -39,6 +39,12 @@ production-site/
 │   ├── contact.html
 │   ├── privacy.html
 │   ├── terms.html
+│   ├── recovery-without-breakdown-cover-nottingham.html   ← Phase 1 lead-expansion (urgent journey)
+│   ├── car-wont-start-recovery-nottingham.html            ← Phase 1 lead-expansion (urgent journey)
+│   ├── car-recovery-from-home-nottingham.html             ← Phase 1 lead-expansion (urgent journey)
+│   ├── long-distance-car-transport-nottingham.html        ← Phase 1 lead-expansion (planned-transport journey)
+│   ├── garage-vehicle-collection-delivery-nottingham.html ← Phase 1 lead-expansion (urgent journey)
+│   ├── recovery-driver-work-nottingham.html               ← operator network (separate from customer journey)
 │   ├── 404.html                   ← used by Workers Assets not_found_handling
 │   ├── sitemap.xml
 │   ├── robots.txt
@@ -66,12 +72,16 @@ production-site/
 │   ├── site-config-loader.js      ← reads public/config/site-config.js at build time
 │   ├── validate.js                ← automated pre-launch checks (node gen/validate.js)
 │   └── pages/                     ← one module per page/page-group
+│       ├── ...                    ← home, services, service-pages, areas, locations,
+│       │                             about, booking, contact, legal (original 22 pages)
+│       ├── lead-expansion.js      ← Phase 1 cluster: 5 new customer pages
+│       └── operator.js            ← recovery-driver-work-nottingham.html
 ├── wrangler.toml
 └── README.md
 ```
 
 `gen/` is a plain Node.js script (no dependencies, no `npm install`
-required) used only to keep the 22 HTML pages consistent while authoring
+required) used only to keep the 28 HTML pages consistent while authoring
 the site. **Only `public/`, `worker/`, `wrangler.toml` need to be deployed.**
 `gen/` can be kept in the repository for future maintenance or removed —
 either is fine, it never runs in production.
@@ -208,29 +218,51 @@ Once enabled, GA4 automatically tracks:
 
 ## 6. Forms & the Worker
 
-All three forms (`homepage callback`, `/booking`, `/contact`) submit to a
-single endpoint: **`POST /notify`**, handled by `worker/index.js`. There is
-only one form-handling architecture in this project — no duplicate handlers.
+There are three form types, all submitting to a single endpoint:
+**`POST /notify`**, handled by `worker/index.js`. There is only one
+form-handling architecture in this project — no duplicate handlers. The
+form type is carried in a `form_name` field:
+
+| `form_name` | Used on | Required fields |
+|---|---|---|
+| `callback` | Home, Contact, all 6 core service pages, all 8 location pages, and 4 of the Phase 1 lead-expansion pages (`recovery-without-breakdown-cover`, `car-wont-start-recovery`, `car-recovery-from-home`, `garage-vehicle-collection-delivery`) | `name`, `phone` |
+| `planned_transport` | Booking (`/booking`) | `name`, `phone`, `collection`, `destination` |
+| `operator_interest` | Recovery operator network (`/recovery-driver-work-nottingham`) | `name`, `phone`, `email`, `basePostcode`, `ownVehicle`, `experience`, plus 3 required acknowledgement checkboxes |
+
+The `long-distance-car-transport-nottingham` page is a planned-transport
+page and does not embed a form itself — its "Plan Transport" action links
+to `/booking`.
 
 - **Progressive enhancement:** forms work with plain HTML POST if
   JavaScript is unavailable (the Worker returns a small HTML confirmation
   page). With JavaScript, `assets/js/forms.js` intercepts submission,
   validates client-side, submits via `fetch` as JSON, and shows
   submitting/success/error states without a page reload. Entered data is
-  **not** cleared unless the submission actually succeeds.
-- **Anti-spam:** a hidden honeypot field (`website`) is included in every
+  **not** cleared unless the submission actually succeeds, and a
+  duplicate-submission guard prevents double-sends while a request is in
+  flight.
+- **Anti-spam:** a hidden honeypot field (`honeypot`) is included in every
   form. If it's filled in, the Worker silently returns a success-looking
   response without contacting Telegram.
-- **Tracking fields:** every form includes hidden fields for
-  `source_page`, `page_title`, `page_url`, `referrer`, `timestamp`, all
-  five `utm_*` parameters, `gclid` and `msclkid`. These are populated by
-  `forms.js` from the current page/URL at submit time.
+- **Tracking fields:** every form includes hidden fields for `sourcePage`,
+  `pageTitle`, `currentUrl`, `referrer`, `timestamp`, all five `utm_*`
+  parameters, `gclid` and `msclkid`. These are populated by `forms.js`
+  from the current page/URL at submit time and preserved in the callback
+  and planned-transport Telegram messages when present.
 - **Validation:** required fields, lengths and basic email/phone shape are
-  checked both client-side (`forms.js`) and server-side (`worker/index.js`).
+  checked both client-side (`forms.js`) and server-side (`worker/index.js`),
+  with validation rules specific to each `form_name`.
 - **Security:** the Worker sanitises all input, sends messages to Telegram
   as plain text (no Markdown/HTML parse mode, so no formatting-escaping
   bugs are possible), applies a body-size limit, never echoes internal
   error detail to the client, and sets security headers on every response.
+  Each form type produces a clearly distinct Telegram message header
+  (`CALL ME BACK LEAD`, `NEW PLANNED TRANSPORT REQUEST`,
+  `NEW RECOVERY OPERATOR INTEREST`) so the three lead types can never be
+  confused with each other.
+- **Operator applications collect no sensitive documents:** identity,
+  licence, insurance and similar verification documents are explicitly
+  not requested through the initial form — see section 11a.
 
 ### Testing the Worker locally
 
@@ -275,7 +307,7 @@ anywhere in `href` attributes, canonicals, or `og:url`).
 
 ## 8. Sitemap, Search Console & Bing
 
-- `public/sitemap.xml` lists all 22 public pages using clean URLs only
+- `public/sitemap.xml` lists all 28 public pages using clean URLs only
   (no `.html`, no `/notify`, no tracking parameters, no duplicates). It is
   regenerated automatically by `gen/build.js` from the same page list used
   to build the site, so it can never drift out of sync.
@@ -383,6 +415,41 @@ HTML comment at the top of both pages' content.
 
 ---
 
+## 11a. Recovery Operator Network — Launch Note
+
+`/recovery-driver-work-nottingham` captures expressions of interest from
+independent recovery operators and drivers via a dedicated
+`operator_interest` form (separate from the customer callback and
+planned-transport forms — see section 6). It deliberately uses "Independent
+recovery operator network" and "Register your interest in suitable
+opportunities" rather than any language implying employment, a guaranteed
+subcontract, a franchise, a membership scheme, or a lead marketplace with
+guaranteed returns. It does not use JobPosting structured data (WebPage is
+used instead — see `gen/schema.js`'s `webPageSchema()`), and does not
+advertise salary, day rate, minimum income, guaranteed leads/jobs, constant
+work, employment benefits, paid training, or police/insurer work.
+
+**Before dispatching any actual work to third-party operators, obtain
+professional review of:**
+
+- Independent-contractor or referral terms
+- Employment-status implications
+- Tax and intermediary obligations
+- Data-sharing and privacy arrangements
+- Customer contracting and payment flows
+- Insurance requirements
+- Operator and driver verification
+- Damage and complaints responsibility
+- Health and safety
+- Applicable operator-licensing requirements
+
+This project does not draw legal conclusions on any of the above — the
+page copy is deliberately cautious and non-committal (e.g. "employment and
+tax status depends on the actual working arrangement") specifically so
+that these determinations are made properly, not by website copy.
+
+---
+
 ## 12. Launch Checklist
 
 - [x] Phone, WhatsApp and hours are set in `public/config/site-config.js`
@@ -390,7 +457,10 @@ HTML comment at the top of both pages' content.
       email is provided — that stays intentionally blank.
 - [ ] Regenerate pages if you edited anything under `gen/`: `node gen/build.js`
 - [ ] Set `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` via `wrangler secret put`
-- [ ] Test all three forms end-to-end (success, validation error, honeypot)
+- [ ] Test all three form types end-to-end (callback, planned transport,
+      operator interest — success, validation error, honeypot)
+- [ ] Complete the professional review items in section 11a before
+      dispatching any real work to third-party recovery operators
 - [ ] Get Privacy Policy & Terms reviewed by a solicitor
 - [ ] Replace/compress the hero image; add real business photography if available
 - [ ] Set `googleAnalyticsId`/`clarityProjectId` only if/when approved for use
@@ -414,8 +484,8 @@ node gen/build.js
 node gen/validate.js
 ```
 
-`gen/validate.js` checks (31 checks as of the last pre-launch pass): all
-22 pages exist, exactly one H1 each, unique titles/descriptions, clean
+`gen/validate.js` checks (81 checks as of the Phase 1 expansion pass): all
+28 pages exist, exactly one H1 each, unique titles/descriptions, clean
 canonicals matching `og:url`, no internal `.html` links, no broken
 internal links, sitemap matches pages with no duplicates, `robots.txt` is
 correct, all JSON-LD parses and FAQ schema matches visible FAQs with no

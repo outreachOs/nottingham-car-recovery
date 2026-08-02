@@ -15,7 +15,8 @@ function build() {
     title: 'Vehicle Recovery Areas Across Nottingham',
     lead:
       'Local recovery coverage across Nottingham and the surrounding towns listed below. Broader coverage may be available further afield, subject to confirmation.',
-    breadcrumbs
+    breadcrumbs,
+    callbackHref: '/contact#callback'
   });
 
   const intro = `<section class="section">
@@ -29,7 +30,7 @@ function build() {
   const content = `${hero}
 ${intro}
 ${C.renderAreasGrid({ heading: 'Choose Your Area', showViewAll: false, areas: AREAS })}
-${C.renderFinalCta({ heading: "Can't See Your Area?" , lead: 'Request a callback and let us know your location — coverage may still be available.'})}`;
+${C.renderFinalCta({ heading: "Can't See Your Area?", lead: 'Call now and let us know your location — coverage may still be available.', callbackHref: '/contact#callback' })}`;
 
   return {
     path: '/areas',

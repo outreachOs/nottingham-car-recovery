@@ -25,7 +25,9 @@ const pageModules = [
   require('./pages/about'),
   require('./pages/booking'),
   require('./pages/contact'),
-  require('./pages/legal')
+  require('./pages/legal'),
+  require('./pages/lead-expansion'),
+  require('./pages/operator')
 ];
 
 function collectPages() {
@@ -123,7 +125,7 @@ function write404() {
       <div class="btn-row">
         <a href="/" class="btn btn-primary">Return to the Homepage</a>
         <a href="/services" class="btn btn-outline">View Services</a>
-        <a href="/contact#callback" class="btn btn-outline">Request a Callback</a>
+        <a href="/contact#callback" class="btn btn-outline">Call Me Back</a>
       </div>
     </div>
   </div>

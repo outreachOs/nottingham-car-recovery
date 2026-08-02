@@ -26,6 +26,9 @@ ${legalHero('Privacy Policy', 'How Nottingham Car Recovery collects, uses and pr
       <h3>Contact Data</h3>
       <p>If you contact us by phone, WhatsApp or email once those channels are configured, we collect the details you share with us in order to respond to your enquiry.</p>
 
+      <h3>Recovery Operator Network Applications</h3>
+      <p>If you register interest in our independent recovery operator network, you may submit contact details, business information, geographic coverage, vehicle information, experience information and working-status information. This information is used to assess initial suitability, contact you, discuss verification, and consider you for suitable operator opportunities. Submitting this information does not mean an application is automatically accepted, and it does not create any employment, worker, agency or subcontracting relationship. We do not request identity documents, licence images, insurance documents or other sensitive verification documents through the initial form — any such checks take place separately through a secure verification process if an application progresses.</p>
+
       <h3>Analytics Data</h3>
       <p>Where enabled, we use analytics tools to understand how the website is used. This may include pages visited, general location (derived from IP address, not stored precisely), device type and referral source. Analytics is optional and only loads when configured — see below.</p>
 
@@ -48,12 +51,13 @@ ${legalHero('Privacy Policy', 'How Nottingham Car Recovery collects, uses and pr
       ${C.renderChecklist([
         'To respond to your recovery request and arrange collection, transport and delivery',
         'To contact you about the status of your request',
+        'To assess and respond to recovery operator network applications, including discussing verification and suitable opportunities',
         'To understand and improve how the website is used, where analytics is enabled',
         'To meet legal or regulatory obligations where applicable'
       ])}
 
       <h2>Data Retention</h2>
-      <p>We keep enquiry information for as long as reasonably necessary to handle your request and for a limited period afterwards for record-keeping purposes, then delete or anonymise it. We do not keep personal data for longer than necessary for the purpose it was collected for.</p>
+      <p>We keep enquiry information, including recovery operator network applications, for as long as reasonably necessary to handle the request or application and for a limited period afterwards for record-keeping purposes, then delete or anonymise it. We do not keep personal data for longer than necessary for the purpose it was collected for.</p>
 
       <h2>Your Rights</h2>
       <p>Under UK data protection law, you have rights including the right to access the personal data we hold about you, request correction or deletion, object to or restrict certain processing, and request a copy of your data in a portable format. To exercise any of these rights, please contact us using the details on our <a href="/contact">Contact page</a>.</p>

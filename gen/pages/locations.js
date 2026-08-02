@@ -74,7 +74,7 @@ ${needRecoveryBand}
 ${callbackForm}
 ${body}
 ${faq.html}
-${C.renderFinalCta({ heading: `Need Recovery in ${opts.name}?` })}`;
+${C.renderFinalCta()}`;
 
   return {
     path: opts.path,

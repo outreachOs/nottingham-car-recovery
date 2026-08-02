@@ -57,6 +57,22 @@ function localBusinessSchema() {
   };
 }
 
+// Used for the operator-network page — deliberately WebPage, not
+// JobPosting. This page is an expression-of-interest page, not a job
+// advert, so JobPosting schema (which implies a defined vacancy, salary
+// range, employer address, etc.) would misrepresent what it is.
+function webPageSchema(opts) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: opts.name,
+    description: opts.description,
+    url: DOMAIN + opts.path,
+    isPartOf: { '@id': WEBSITE_ID },
+    about: { '@id': ORG_ID }
+  };
+}
+
 function serviceSchema(opts) {
   return {
     '@context': 'https://schema.org',
@@ -77,5 +93,6 @@ module.exports = {
   organizationSchema,
   websiteSchema,
   localBusinessSchema,
-  serviceSchema
+  serviceSchema,
+  webPageSchema
 };

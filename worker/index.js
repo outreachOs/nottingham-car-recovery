@@ -5,17 +5,26 @@
  * the ASSETS binding and exposes exactly one API route:
  *
  *   POST /notify   — receives the callback form (used sitewide: home,
- *                    contact, every service page, every location page)
- *                    and the planned-transport form (booking page),
- *                    and forwards a concise plain-text summary to a
- *                    Telegram chat via the Bot API.
+ *                    contact, every service page, every location page),
+ *                    the planned-transport form (booking page) and the
+ *                    recovery-operator interest form (operator network
+ *                    page), and forwards a concise plain-text summary
+ *                    to a Telegram chat via the Bot API.
  *
- * Two form types are accepted, distinguished by the `form_name` field:
+ * Three form types are accepted, distinguished by the `form_name` field:
  *
  *   callback          — the two-field urgent-recovery route.
  *                        Required: name, phone.
  *   planned_transport — the booking-page route for planned/advance jobs.
  *                        Required: name, phone, collection, destination.
+ *   operator_interest — recovery operator / driver expression of
+ *                        interest. Required: name, phone, email,
+ *                        basePostcode, areasCovered, ownVehicle,
+ *                        experience, plus a single required
+ *                        acknowledgement checkbox (operatorAcknowledgement).
+ *                        This is a distinct, non-customer lead type — it
+ *                        is never mixed with callback or
+ *                        planned_transport messages.
  *
  * Accepted request bodies (see readPayload() below):
  *   - application/json                  — parsed with JSON.parse
@@ -44,7 +53,7 @@ const SECURITY_HEADERS = {
   'X-Frame-Options': 'DENY'
 };
 
-// Fields we accept from either form. Unknown fields are ignored.
+// Fields we accept from any of the three forms. Unknown fields are ignored.
 const KNOWN_FIELDS = [
   'form_name',
   // Shared
@@ -62,7 +71,17 @@ const KNOWN_FIELDS = [
   'keys',
   'access',
   'notes',
-  // Hidden/technical fields, both forms
+  // operator_interest only
+  'email',
+  'business',
+  'basePostcode',
+  'areasCovered',
+  'ownVehicle',
+  'vehicleType',
+  'experience',
+  'workingStatus',
+  'operatorAcknowledgement',
+  // Hidden/technical fields, all forms
   'sourcePage',
   'pageTitle',
   'currentUrl',
@@ -79,7 +98,7 @@ const KNOWN_FIELDS = [
 
 // Fields long enough to need the higher character limit (freeform text
 // rather than a short value like a name or postcode).
-const LONG_FIELDS = new Set(['notes', 'access']);
+const LONG_FIELDS = new Set(['notes', 'access', 'experience']);
 
 function withSecurityHeaders(response) {
   const headers = new Headers(response.headers);
@@ -237,6 +256,7 @@ function validate(clean, honeypotValue) {
   }
 
   const isPlannedTransport = clean.form_name === 'planned_transport';
+  const isOperator = clean.form_name === 'operator_interest';
 
   if (!clean.name) errors.push('Name is required.');
 
@@ -249,6 +269,19 @@ function validate(clean, honeypotValue) {
   if (isPlannedTransport) {
     if (!clean.collection) errors.push('Collection area or postcode is required.');
     if (!clean.destination) errors.push('Destination area or postcode is required.');
+  }
+
+  if (isOperator) {
+    if (!clean.email) {
+      errors.push('Email address is required.');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean.email)) {
+      errors.push('Enter a valid email address.');
+    }
+    if (!clean.basePostcode) errors.push('Base postcode is required.');
+    if (!clean.areasCovered) errors.push('Please provide the areas you cover.');
+    if (!clean.ownVehicle) errors.push('Please answer whether you operate your own recovery vehicle.');
+    if (!clean.experience) errors.push('Please provide a brief summary of your recovery or vehicle-transport experience.');
+    if (!clean.operatorAcknowledgement) errors.push('Please confirm the acknowledgement checkbox.');
   }
 
   return { spam: false, errors };
@@ -277,7 +310,7 @@ function trackingLines(clean) {
 // or other long/empty fields — this is the urgent-recovery lead route
 // and needs to be readable on a phone at a glance.
 function buildCallbackMessage(clean) {
-  const lines = ['NEW CALLBACK LEAD', ''];
+  const lines = ['CALL ME BACK LEAD', ''];
   lines.push(`Name: ${clean.name}`);
   lines.push(`Phone: ${clean.phone}`);
   lines.push(`Source: ${sourceLabel(clean)}`);
@@ -321,12 +354,32 @@ function buildPlannedTransportMessage(clean) {
   return lines.join('\n').slice(0, 4096);
 }
 
+// Recovery-operator expressions of interest use their own clearly
+// distinct header so they can never be confused with a customer lead —
+// this is a different kind of message read by a different purpose.
+function buildOperatorMessage(clean) {
+  const lines = ['NEW RECOVERY OPERATOR INTEREST', ''];
+  lines.push(`Name: ${clean.name}`);
+  lines.push(`Mobile: ${clean.phone}`);
+  lines.push(`Email: ${clean.email}`);
+  if (clean.business) lines.push(`Business: ${clean.business}`);
+  lines.push(`Base postcode: ${clean.basePostcode}`);
+  lines.push(`Areas covered: ${clean.areasCovered}`);
+  lines.push(`Own recovery vehicle: ${clean.ownVehicle}`);
+  if (clean.vehicleType) lines.push(`Vehicle type/capacity: ${clean.vehicleType}`);
+  if (clean.workingStatus) lines.push(`Current status: ${clean.workingStatus}`);
+  lines.push(`Experience: ${clean.experience}`);
+  lines.push(`Source: ${sourceLabel(clean)}`);
+  lines.push(`Time: ${clean.timestamp || new Date().toISOString()}`);
+  return lines.join('\n').slice(0, 4096);
+}
+
 // Plain text — no Markdown/HTML parse mode is used, so no special
 // Telegram formatting characters need to be escaped.
 function buildTelegramMessage(clean) {
-  return clean.form_name === 'planned_transport'
-    ? buildPlannedTransportMessage(clean)
-    : buildCallbackMessage(clean);
+  if (clean.form_name === 'planned_transport') return buildPlannedTransportMessage(clean);
+  if (clean.form_name === 'operator_interest') return buildOperatorMessage(clean);
+  return buildCallbackMessage(clean);
 }
 
 async function sendTelegramMessage(env, text) {

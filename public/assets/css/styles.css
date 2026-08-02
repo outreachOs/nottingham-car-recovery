@@ -1489,8 +1489,36 @@ input, textarea, select {
 }
 
 /* ----------------------------------------------------------------
-   16. Callback / two-column panel section
+   16. Callback section — compact, single block, used everywhere the
+   two-field "Call Me Back" form appears.
 ------------------------------------------------------------------- */
+.callback-card {
+  max-width: 34rem;
+}
+
+.callback-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .callback-fields {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .callback-fields .field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .callback-fields .btn {
+    flex-shrink: 0;
+  }
+}
+
 .split-panel {
   display: grid;
   gap: 2.5rem;

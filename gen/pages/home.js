@@ -9,8 +9,8 @@ function build() {
 
   const content = `${C.renderHeroHome()}
 ${C.renderTrustStrip()}
+${C.renderCallbackForm({ showDirectContact: true })}
 ${C.renderServicesGrid()}
-${C.renderCallbackForm({ showPanel: true })}
 ${C.renderRoadCoverage()}
 ${C.renderWhyChoose()}
 ${C.renderHowItWorks()}

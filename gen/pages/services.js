@@ -46,9 +46,37 @@ function build() {
         </ul>
         <a href="/contact#callback" class="callout-link">
           <strong>Not sure which service you need?</strong>
-          Request a callback and describe your situation — we will point you to the right option.
+          Leave your number and we'll call you back to point you to the right option.
         </a>
       </aside>
+    </div>
+  </div>
+</section>`;
+
+  const moreOptions = `<section class="section surface">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Also Available</span>
+      <h2>More Recovery and Transport Options</h2>
+      <p>A few more specific situations that fall under the services above.</p>
+    </div>
+    <div class="grid-cards cols-3">
+      ${[
+        { href: '/recovery-without-breakdown-cover-nottingham', title: 'Recovery Without Membership', description: 'One-off recovery for anyone without an AA, RAC or other breakdown policy.', icon: 'shieldCheck' },
+        { href: '/car-wont-start-recovery-nottingham', title: 'Non-Starting Vehicle Recovery', description: "Vehicle transport when a car or van won't start.", icon: 'wrench' },
+        { href: '/car-recovery-from-home-nottingham', title: 'Home Collection', description: 'Collection from a driveway or other suitable residential address.', icon: 'house' },
+        { href: '/long-distance-car-transport-nottingham', title: 'Long-Distance Transport', description: 'Planned vehicle transport to or from Nottingham.', icon: 'route' },
+        { href: '/garage-vehicle-collection-delivery-nottingham', title: 'Garage Collection & Delivery', description: 'Transport between home, work, garage and bodyshop.', icon: 'building2' }
+      ]
+        .map(
+          (item) => `<a href="${item.href}" class="service-card">
+        <span class="service-card__icon">${C.icon(item.icon)}</span>
+        <h3>${item.title}</h3>
+        <p>${item.description}</p>
+        <span class="service-card__link">Learn more ${C.icon('arrowRight')}</span>
+      </a>`
+        )
+        .join('\n')}
     </div>
   </div>
 </section>`;
@@ -59,8 +87,9 @@ ${C.renderServicesGrid({
   lead: 'Every service below covers cars, vans and suitable light commercial vehicles across Nottingham.'
 })}
 ${emergencyVsPlanned}
+${moreOptions}
 ${C.renderDestinations()}
-${C.renderFinalCta({ heading: 'Ready to Request Recovery?', callbackHref: '/contact#callback' })}`;
+${C.renderFinalCta({ callbackHref: '/contact#callback' })}`;
 
   return {
     path: '/services',

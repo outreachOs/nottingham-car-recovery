@@ -5,7 +5,7 @@ const C = require('../components');
 function build() {
   const breadcrumbs = [
     { label: 'Home', href: '/' },
-    { label: 'Booking', href: '/booking' }
+    { label: 'Plan Transport', href: '/booking' }
   ];
 
   // Booking is the planned-transport route, not the urgent recovery
@@ -25,10 +25,10 @@ function build() {
   const urgentNotice = `<section class="section-tight">
   <div class="container">
     <div class="safe-panel__notice" style="max-width:44rem;">
-      <p style="font-size:1rem;"><strong>Broken down or need recovery now?</strong><br>Call <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" style="font-weight:700;">${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a> instead.</p>
+      <p style="font-size:1rem;"><strong>Need recovery now?</strong><br>Call <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" style="font-weight:700;">${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a> or use <a href="${C.SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" style="font-weight:700;">WhatsApp</a>.</p>
       <div class="btn-row" style="margin-top:1rem;">
         <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary">${C.icon('phone')} Call ${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a>
-        <a href="${C.SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline">${C.icon('messageCircle')} WhatsApp Us</a>
+        <a href="${C.SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline">${C.icon('messageCircle')} WhatsApp</a>
       </div>
     </div>
   </div>
@@ -112,7 +112,7 @@ function build() {
     </details>
 
     <div style="margin-top:1.5rem;">
-      <button type="submit" class="btn btn-primary btn-block btn-block-sm-auto">Request Planned Transport</button>
+      <button type="submit" class="btn btn-primary btn-block btn-block-sm-auto">Send Transport Details</button>
     </div>
     <div class="form-banner" role="status"></div>
 
@@ -134,7 +134,7 @@ ${urgentNotice}
         <p style="font-size:0.875rem;color:var(--muted-foreground);margin-top:0.5rem;">Call ${C.SITE_CONFIG.phoneDisplay} or WhatsApp us — we're happy to help.</p>
         <div style="margin-top:1rem;display:flex;flex-direction:column;gap:0.75rem;">
           <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" class="btn btn-primary btn-block">${C.icon('phone')} Call ${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a>
-          <a href="${C.SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline btn-block">${C.icon('messageCircle')} WhatsApp Us</a>
+          <a href="${C.SITE_CONFIG.whatsappHref}" target="_blank" rel="noopener noreferrer" data-cta="whatsapp" data-track="whatsapp-click" class="btn btn-outline btn-block">${C.icon('messageCircle')} WhatsApp</a>
         </div>
       </aside>
     </div>

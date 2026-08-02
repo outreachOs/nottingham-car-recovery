@@ -34,6 +34,9 @@ function buildServicePage(opts) {
           ${opts.otherServices
             .map((s) => `<li><a href="${s.href}">${s.title}</a></li>`)
             .join('\n')}
+          ${(opts.extraAsideLinks || [])
+            .map((l) => `<li><a href="${l.href}">${l.title}</a></li>`)
+            .join('\n')}
         </ul>
         ${opts.contextualLink ? C.renderCalloutLink(opts.contextualLink.href, opts.contextualLink.label, opts.contextualLink.text) : ''}
       </aside>
@@ -46,10 +49,7 @@ ${needRecoveryBand}
 ${callbackForm}
 ${coverageSection}
 ${faq.html}
-${C.renderFinalCta({
-    heading: 'Need to arrange recovery?',
-    lead: `Call ${C.SITE_CONFIG.phoneDisplay} or request a callback.`
-  })}`;
+${C.renderFinalCta()}`;
 
   return {
     path: opts.path,
@@ -85,6 +85,10 @@ function breakdown() {
     serviceName: 'Breakdown Recovery',
     serviceType: 'Breakdown recovery',
     otherServices: others('/breakdown-recovery-nottingham'),
+    extraAsideLinks: [
+      { href: '/recovery-without-breakdown-cover-nottingham', title: 'Recovery Without Breakdown Cover' },
+      { href: '/car-wont-start-recovery-nottingham', title: "Car Won't Start Recovery" }
+    ],
     ctaHeading: 'Broken Down in Nottingham?',
     bodyHtml: `
       <h2>What This Service Covers</h2>
@@ -280,6 +284,10 @@ function transport() {
     serviceName: 'Car Towing & Vehicle Transport',
     serviceType: 'Vehicle transport',
     otherServices: others('/car-towing-vehicle-transport-nottingham'),
+    extraAsideLinks: [
+      { href: '/long-distance-car-transport-nottingham', title: 'Long-Distance Car Transport' },
+      { href: '/garage-vehicle-collection-delivery-nottingham', title: 'Garage Collection & Delivery' }
+    ],
     ctaHeading: 'Need Vehicle Transport?',
     contextualLink: {
       href: '/auction-non-runner-collection-nottingham',
@@ -404,6 +412,9 @@ function auction() {
     serviceName: 'Auction & Non-Runner Vehicle Collection',
     serviceType: 'Non-runner vehicle collection',
     otherServices: others('/auction-non-runner-collection-nottingham'),
+    extraAsideLinks: [
+      { href: '/long-distance-car-transport-nottingham', title: 'Long-Distance Car Transport' }
+    ],
     ctaHeading: 'Need a Vehicle Collected?',
     contextualLink: {
       href: '/car-towing-vehicle-transport-nottingham',

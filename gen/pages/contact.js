@@ -11,14 +11,28 @@ function build() {
   const hero = C.renderHeroPage({
     eyebrow: 'Contact',
     title: 'Contact Nottingham Car Recovery',
-    lead: 'Call, WhatsApp or request a callback — whichever is easiest once you are safely positioned.',
+    lead: 'Call, WhatsApp or leave your number — whichever is easiest once you are safely positioned.',
     breadcrumbs
   });
 
-  const needRecoveryNow = C.renderNeedRecoveryBand({
-    heading: 'Need Vehicle Recovery Now?',
-    leadHtml: `Call <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" style="font-weight:700;color:var(--primary);">${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a>. Available ${C.escapeHtml(C.SITE_CONFIG.serviceHours)}.`
+  const needRecovery = C.renderNeedRecoveryBand({
+    heading: 'Need Recovery?',
+    leadHtml: `Call <a href="${C.SITE_CONFIG.phoneHref}" data-cta="call" data-track="phone-click" style="font-weight:700;color:var(--primary);">${C.escapeHtml(C.SITE_CONFIG.phoneDisplay)}</a>. Available 24/7.`
   });
+
+  const callbackForm = C.renderCallbackForm({ formId: 'contact-form' });
+
+  const planTransportBlock = `<section class="section-tight">
+  <div class="container">
+    <div class="safe-panel" style="max-width:40rem;">
+      <h2 style="margin:0;font-size:1.125rem;font-weight:600;font-family:var(--font-display);">Planning Vehicle Transport?</h2>
+      <p style="margin-top:0.5rem;color:var(--muted-foreground);">For auction collection, non-runners, garage appointments or advance vehicle transport.</p>
+      <div class="btn-row">
+        <a href="/booking" class="btn btn-outline">${C.icon('calendarClock')} Plan Vehicle Transport</a>
+      </div>
+    </div>
+  </div>
+</section>`;
 
   const contactActions = `<section class="section">
   <div class="container">
@@ -29,7 +43,7 @@ function build() {
           <p>Choose whichever contact method suits your situation. If you are dealing with a breakdown or accident, please make sure you are safely positioned away from moving traffic before making contact.</p>
         </div>
 
-        <p style="margin-top:0.75rem;font-size:0.8125rem;color:var(--muted-foreground);">No business email is available yet — please call, WhatsApp or use the callback form below.</p>
+        <p style="margin-top:0.75rem;font-size:0.8125rem;color:var(--muted-foreground);">No business email is available yet — please call, WhatsApp or leave your number above.</p>
 
         <div class="safety-box" style="margin-top:2rem;">
           <h3>${C.icon('alertTriangle')} If You Are in a Dangerous Position</h3>
@@ -57,21 +71,11 @@ function build() {
   </div>
 </section>`;
 
-  const callbackForm = C.renderCallbackForm({ formId: 'contact-form', showPanel: false });
-
-  const plannedTransportLink = `<section class="section-tight">
-  <div class="container">
-    <p style="text-align:center;font-size:0.9375rem;color:var(--muted-foreground);">
-      Arranging vehicle transport in advance? Use the <a href="/booking">planned transport request form</a>.
-    </p>
-  </div>
-</section>`;
-
   const content = `${hero}
-${needRecoveryNow}
-${contactActions}
+${needRecovery}
 ${callbackForm}
-${plannedTransportLink}`;
+${planTransportBlock}
+${contactActions}`;
 
   return {
     path: '/contact',
